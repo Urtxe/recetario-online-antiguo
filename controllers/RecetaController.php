@@ -1,9 +1,10 @@
 <?php
 require_once 'models/Receta.php';
-require_once 'models/Usuario.php';
+require_once 'services/RecipeService.php';
 require_once 'config/helpers.php';
 
 class RecetaController {
+    private $recipeService;
 
     private $dificultadesPermitidas = ['facil', 'medio', 'dificil'];
     private $origenesPermitidos = [
@@ -15,8 +16,11 @@ class RecetaController {
         'desayuno', 'aperitivo', 'entrante', 'principal',
         'postre', 'merienda', 'guarnición', 'salsa'
     ];
-    
-    // Validar autenticación
+
+    public function __construct($recipeService = null) {
+        $this->recipeService = $recipeService ?: new RecipeService();
+    }
+
     private function verificarSesion() {
         if (!isset($_SESSION['usuario_id'])) {
             header('Location: index.php?controller=auth&action=login');
@@ -117,8 +121,7 @@ class RecetaController {
     public function index() {
         $this->verificarSesion();
         $usuario_nombre = $_SESSION['usuario_nombre'];
-        
-        // Obtener filtros de URL
+
         $filtros = [
             'buscar' => $_GET['buscar'] ?? '',
             'origen' => $_GET['origen'] ?? '',
@@ -129,28 +132,22 @@ class RecetaController {
             'ingredientes' => $_GET['ingredientes'] ?? ''
         ];
 
-        // Paginación
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $por_pagina = 12;
-        $offset = ($pagina - 1) * $por_pagina;
+
+        $listado = $this->recipeService->listData($filtros, $pagina, $por_pagina, $_SESSION['usuario_id']);
 
         $modelo = new Receta();
-        
-        // Cargar listas dinámicas
         $lista_origenes = $modelo->obtenerOrigenesEnUso();
         $lista_tipos = $modelo->obtenerTiposEnUso();
         $lista_usuarios = $modelo->obtenerUsuariosConRecetas();
-        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
+        $recetas = $listado['recetas'];
+        $favoritos_ids = $listado['favoritos_ids'];
+        $total_recetas = $listado['total_recetas'];
+        $total_paginas = $listado['total_paginas'];
 
-        // Búsqueda filtrada
-        $recetas = $modelo->listarConFiltros($filtros, $por_pagina, $offset);
-        $total_recetas = $modelo->contarTotal($filtros);
-        $total_paginas = ceil($total_recetas / $por_pagina);
-
-        // Responder AJAX o cargar vista completa
         if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
             require_once 'views/recetas/grid.php';
-            // Incluir paginación en la respuesta AJAX
             $params = $_GET;
             unset($params['pagina'], $params['ajax']);
             $query_filtros = http_build_query($params);
@@ -172,10 +169,16 @@ class RecetaController {
         $this->verificarSesion();
         $usuario_nombre = $_SESSION['usuario_nombre'];
         $usuario_id_actual = $_SESSION['usuario_id'];
-        
-        $modelo = new Receta();
-        $receta = $modelo->obtenerPorId($id);
-        $ingredientes = $modelo->obtenerIngredientes($id);
+
+        $detalle = $this->recipeService->detailData($id, $usuario_id_actual);
+        if (!$detalle['success']) {
+            header('Location: index.php');
+            exit();
+        }
+
+        $receta = $detalle['receta'];
+        $ingredientes = $detalle['ingredientes'];
+        $es_favorito = $detalle['es_favorito'];
 
         require_once 'views/layouts/header.php';
         require_once 'views/recetas/ver.php';
@@ -193,52 +196,46 @@ class RecetaController {
 
     public function guardar() {
         $this->verificarSesion();
-        
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            require_csrf_token($_POST['_csrf_token'] ?? '');
-            list($valido, $mensajeError, $datosBase) = $this->validarRecetaDesdePost();
-            if (!$valido) {
-                $_SESSION['mensaje_flash'] = $mensajeError;
-                $_SESSION['tipo_flash'] = 'error';
-                header('Location: index.php?controller=receta&action=crear');
-                exit();
-            }
 
-            // Procesar imagen
-            list($imagenOk, $imagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
-            if (!$imagenOk) {
-                $_SESSION['mensaje_flash'] = $errorImagen;
-                $_SESSION['tipo_flash'] = 'error';
-                header('Location: index.php?controller=receta&action=crear');
-                exit();
-            }
-
-            $datosBase['imagen'] = $imagen;
-
-            $modelo = new Receta();
-            $modelo->iniciarTransaccion();
-
-            try {
-                $id_receta = $modelo->crear($datosBase, $_SESSION['usuario_id']);
-
-                if (!$id_receta || !$modelo->guardarIngredientes($id_receta, $_POST['ingrediente_nombre'] ?? [], $_POST['ingrediente_cantidad'] ?? [])) {
-                    throw new Exception('Error al guardar');
-                }
-
-                $modelo->confirmarTransaccion();
-                $_SESSION['mensaje_flash'] = '¡Receta guardada!';
-                $_SESSION['tipo_flash'] = 'success';
-                header('Location: index.php');
-                exit();
-            } catch (Exception $e) {
-                $modelo->revertirTransaccion();
-                $this->eliminarImagenSiExiste($imagen);
-                $_SESSION['mensaje_flash'] = 'Error al guardar';
-                $_SESSION['tipo_flash'] = 'error';
-                header('Location: index.php?controller=receta&action=crear');
-                exit();
-            }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php');
+            exit();
         }
+
+        require_csrf_token($_POST['_csrf_token'] ?? '');
+        list($valido, $mensajeError, $datosBase) = $this->validarRecetaDesdePost();
+        if (!$valido) {
+            $_SESSION['mensaje_flash'] = $mensajeError;
+            $_SESSION['tipo_flash'] = 'error';
+            header('Location: index.php?controller=receta&action=crear');
+            exit();
+        }
+
+        list($imagenOk, $imagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
+        if (!$imagenOk) {
+            $_SESSION['mensaje_flash'] = $errorImagen;
+            $_SESSION['tipo_flash'] = 'error';
+            header('Location: index.php?controller=receta&action=crear');
+            exit();
+        }
+
+        $datosBase['imagen'] = $imagen;
+        $datosBase['ingrediente_nombre'] = $_POST['ingrediente_nombre'] ?? [];
+        $datosBase['ingrediente_cantidad'] = $_POST['ingrediente_cantidad'] ?? [];
+
+        $resultado = $this->recipeService->createRecipe($datosBase, $_SESSION['usuario_id']);
+        if (!$resultado['success']) {
+            $this->eliminarImagenSiExiste($imagen);
+            $_SESSION['mensaje_flash'] = $resultado['error'];
+            $_SESSION['tipo_flash'] = 'error';
+            header('Location: index.php?controller=receta&action=crear');
+            exit();
+        }
+
+        $_SESSION['mensaje_flash'] = '¡Receta guardada!';
+        $_SESSION['tipo_flash'] = 'success';
+        header('Location: index.php');
+        exit();
     }
 
     public function editar($id) {
@@ -246,13 +243,12 @@ class RecetaController {
         $modelo = new Receta();
         $receta = $modelo->obtenerPorId($id);
 
-        // Verificar autoría
         if (!$receta || $receta['usuario_id'] != $_SESSION['usuario_id']) {
             header('Location: index.php');
             exit();
         }
 
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_csrf_token($_POST['_csrf_token'] ?? '');
             list($valido, $mensajeError, $datosBase) = $this->validarRecetaDesdePost();
             if (!$valido) {
@@ -262,7 +258,7 @@ class RecetaController {
                 exit();
             }
 
-            list($imagenOk, $nombre_imagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
+            list($imagenOk, $nombreImagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
             if (!$imagenOk) {
                 $_SESSION['mensaje_flash'] = $errorImagen;
                 $_SESSION['tipo_flash'] = 'error';
@@ -270,51 +266,43 @@ class RecetaController {
                 exit();
             }
 
-            $imagenAnterior = $receta['imagen_url'];
-            $datosBase['imagen'] = $nombre_imagen ?: $imagenAnterior;
+            $datosBase['imagen'] = $nombreImagen ?: $receta['imagen_url'];
+            $datosBase['ingrediente_nombre'] = $_POST['ingrediente_nombre'] ?? [];
+            $datosBase['ingrediente_cantidad'] = $_POST['ingrediente_cantidad'] ?? [];
 
-            $modelo->iniciarTransaccion();
-
-            try {
-                if (!$modelo->actualizar($id, $datosBase)) {
-                    throw new Exception('Error al actualizar la receta');
+            $resultado = $this->recipeService->updateRecipe($id, $datosBase, $_SESSION['usuario_id']);
+            if (!$resultado['success']) {
+                if (!empty($nombreImagen)) {
+                    $this->eliminarImagenSiExiste($nombreImagen);
                 }
-
-                if (!$modelo->borrarIngredientes($id)) {
-                    throw new Exception('Error al limpiar ingredientes');
-                }
-
-                if (!$modelo->guardarIngredientes($id, $_POST['ingrediente_nombre'] ?? [], $_POST['ingrediente_cantidad'] ?? [])) {
-                    throw new Exception('Error al guardar ingredientes');
-                }
-
-                $modelo->confirmarTransaccion();
-                if (!empty($nombre_imagen) && $nombre_imagen !== $imagenAnterior) {
-                    $this->eliminarImagenSiExiste($imagenAnterior);
-                }
-                $_SESSION['mensaje_flash'] = '¡Receta actualizada!';
-                $_SESSION['tipo_flash'] = 'success';
-            } catch (Exception $e) {
-                $modelo->revertirTransaccion();
-                if (!empty($nombre_imagen)) {
-                    $this->eliminarImagenSiExiste($nombre_imagen);
-                }
-                $_SESSION['mensaje_flash'] = $e->getMessage();
+                $_SESSION['mensaje_flash'] = $resultado['error'];
                 $_SESSION['tipo_flash'] = 'error';
+                header('Location: index.php?controller=receta&action=editar&id=' . $id);
+                exit();
             }
+
+            if (!empty($nombreImagen) && $nombreImagen !== ($resultado['imagen_anterior'] ?? '')) {
+                $this->eliminarImagenSiExiste($resultado['imagen_anterior'] ?? '');
+            }
+
+            $_SESSION['mensaje_flash'] = '¡Receta actualizada!';
+            $_SESSION['tipo_flash'] = 'success';
             header('Location: index.php?controller=receta&action=ver&id=' . $id);
             exit();
         }
 
-        $ingredientes = $modelo->obtenerIngredientes($id);
+        $ingredientes = [];
+        $resultadoIngredientes = $modelo->obtenerIngredientes($id);
+        while ($ing = $resultadoIngredientes->fetch_assoc()) {
+            $ingredientes[] = $ing;
+        }
+
         require_once 'views/layouts/header.php';
         require_once 'views/recetas/editar.php';
         require_once 'views/layouts/footer.php';
     }
 
     public function actualizar() {
-        // Redirige al método editar() unificado para mantener compatibilidad
-        // con cualquier formulario que apunte a action=actualizar
         $this->verificarSesion();
         if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id_receta'])) {
             $this->editar($_POST['id_receta']);
@@ -330,43 +318,34 @@ class RecetaController {
             http_response_code(405);
             exit('Método no permitido');
         }
-        require_csrf_token($_POST['_csrf_token'] ?? '');
-        $modelo = new Receta();
-        $receta = $modelo->obtenerPorId($id);
 
-        if ($receta && $receta['usuario_id'] == $_SESSION['usuario_id']) {
-            $modelo->iniciarTransaccion();
-            try {
-                if (!$modelo->borrar($id)) {
-                    throw new Exception('No se pudo borrar la receta');
-                }
-                $modelo->confirmarTransaccion();
-                $this->eliminarImagenSiExiste($receta['imagen_url'] ?? '');
-            } catch (Exception $e) {
-                $modelo->revertirTransaccion();
-                $_SESSION['mensaje_flash'] = 'Error al borrar la receta';
-                $_SESSION['tipo_flash'] = 'error';
-            }
+        require_csrf_token($_POST['_csrf_token'] ?? '');
+        $resultado = $this->recipeService->deleteRecipe($id, $_SESSION['usuario_id']);
+        if ($resultado['success']) {
+            $this->eliminarImagenSiExiste($resultado['receta']['imagen_url'] ?? '');
+        } else {
+            $_SESSION['mensaje_flash'] = 'Error al borrar la receta';
+            $_SESSION['tipo_flash'] = 'error';
         }
+
         header('Location: index.php');
+        exit();
     }
 
     public function misFavoritos() {
         $this->verificarSesion();
         $usuario_nombre = $_SESSION['usuario_nombre'];
-        
-        // Paginación
+
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $por_pagina = 9;
-        $offset = ($pagina - 1) * $por_pagina;
-        
-        $modelo = new Receta();
-        $recetas = $modelo->obtenerFavoritos($_SESSION['usuario_id'], $por_pagina, $offset);
-        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
-        $total_favoritos = $modelo->contarFavoritos($_SESSION['usuario_id']);
-        $total_paginas = ceil($total_favoritos / $por_pagina);
+        $listado = $this->recipeService->getFavoritesData($_SESSION['usuario_id'], $pagina, $por_pagina);
+
+        $recetas = $listado['recetas'];
+        $favoritos_ids = $listado['favoritos_ids'];
+        $total_favoritos = $listado['total_favoritos'];
+        $total_paginas = $listado['total_paginas'];
         $titulo_pagina = 'Mis Favoritos';
-        $desde_favoritos = true; // Variable para saber que estamos en favoritos
+        $desde_favoritos = true;
 
         require_once 'views/layouts/header.php';
         require_once 'views/recetas/mis_favoritos.php';
@@ -382,17 +361,12 @@ class RecetaController {
         }
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
-
         $receta_id = $_POST['id'] ?? null;
         $usuario_id = $_SESSION['usuario_id'];
 
         if ($receta_id) {
-            $uModel = new Usuario();
-            $resultado = $uModel->toggleFavorito($usuario_id, $receta_id);
-            echo json_encode([
-                'success' => $resultado,
-                'favorito' => $uModel->esFavorito($usuario_id, $receta_id)
-            ]);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($this->recipeService->toggleFavorite($usuario_id, $receta_id));
         }
         exit();
     }

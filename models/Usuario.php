@@ -10,7 +10,7 @@ class Usuario {
 
     // Autenticar usuario
     public function login($email, $password) {
-        $sql = "SELECT id, nombre, password FROM usuarios WHERE email = ?";
+        $sql = "SELECT id, nombre, email, password FROM usuarios WHERE email = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -72,6 +72,11 @@ class Usuario {
         $stmt = $this->db->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
         $stmt->bind_param("si", $passwordHash, $id);
         return $stmt->execute();
+    }
+
+    public function contarUsuarios() {
+        $res = $this->db->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc();
+        return (int)$res['total'];
     }
 
     // Comprobar si es favorito
