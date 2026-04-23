@@ -1,0 +1,151 @@
+/* Importar todos los módulos base */
+@import url('parts/base.css');
+@import url('parts/componentes.css');
+@import url('parts/formularios.css');
+
+/* Estilos específicos para auth sin :has() */
+/* Este archivo NO importa layout.css para evitar conflictos */
+
+/* ========== BODY DE AUTH ========== */
+body {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    background-image: url("../img/portada-login2.png");
+    background-size: 100% 100%; 
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 150px;
+    box-sizing: border-box;
+}
+
+/* ========== ELEMENTOS DE AUTH ========== */
+
+.titulo {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Arial', sans-serif;
+    font-size: 50px;
+    color: #333;
+    margin: 0;
+    text-align: center;
+    width: 100%;
+    z-index: 10;
+}
+
+.contenedor-auth {
+    width: 350px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background-color: rgba(255, 255, 255, 0.7); 
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    margin: 0;
+    position: relative;
+    z-index: 5;
+}
+
+.botones {
+    display: flex;
+    background-color: rgba(241, 241, 241, 0.5);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    background-color: transparent;
+    transition: background-color 0.3s;
+}
+
+.tab-btn.activo {
+    background-color: var(--color-white);
+    border-bottom: 2px solid var(--color-primary);
+    color: var(--color-primary);
+    font-weight: bold;
+}
+
+.tab-btn:hover:not(.activo) {
+    background-color: #e2e2e2;
+}
+
+.paneles {
+    padding: 20px;
+    background-color: transparent;
+}
+
+.panel {
+    display: none;
+}
+
+.panel.activo {
+    display: block;
+}
+
+.panel form label {
+    display: block;
+    margin-top: 10px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.panel form input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.panel form input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.panel form button {
+    margin-top: 20px;
+    padding: 12px;
+    width: 100%;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: background 0.2s;
+}
+
+.panel form button:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.footer {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    width: 100%;
+    z-index: 10;
+}

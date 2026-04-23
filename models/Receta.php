@@ -1,0 +1,224 @@
+<?php
+require_once 'config/Database.php';
+
+class Receta {
+    private $db;
+
+    public function __construct() {
+        $this->db = Database::conectar();
+    }
+
+    // Listar con filtros y paginación
+    public function listarConFiltros($filtros, $limit, $offset) {
+        $sql = "SELECT recetas.*, usuarios.nombre AS nombre_autor 
+                FROM recetas 
+                JOIN usuarios ON recetas.usuario_id = usuarios.id";
+        
+        list($where, $params, $types) = $this->construirWhere($filtros);
+
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(" AND ", $where);
+        }
+
+        $sql .= " ORDER BY recetas.id DESC LIMIT ? OFFSET ?";
+        $types .= "ii";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $stmt = $this->db->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        return $stmt->get_result();
+    }
+
+    // Contar total de registros
+    public function contarTotal($filtros) {
+        $sql = "SELECT COUNT(*) as total FROM recetas";
+        list($where, $params, $types) = $this->construirWhere($filtros);
+
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(" AND ", $where);
+        }
+
+        $stmt = $this->db->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res['total'];
+    }
+
+    // Generar condiciones donde dinámicamente
+    private function construirWhere($filtros) {
+        $where = [];
+        $params = [];
+        $types = "";
+
+        if (!empty($filtros['buscar'])) {
+            $where[] = "recetas.titulo LIKE ?";
+            $types .= "s";
+            $params[] = "%" . $filtros['buscar'] . "%";
+        }
+
+        if (!empty($filtros['ingredientes'])) {
+            $where[] = "EXISTS (SELECT 1 FROM ingredientes WHERE ingredientes.receta_id = recetas.id AND ingredientes.nombre LIKE ?)";
+            $types .= "s";
+            $params[] = "%" . $filtros['ingredientes'] . "%";
+        }
+
+        if (!empty($filtros['origen'])) {
+            $where[] = "recetas.origen = ?";
+            $types .= "s";
+            $params[] = $filtros['origen'];
+        }
+
+        if (!empty($filtros['dificultad'])) {
+            $where[] = "recetas.dificultad = ?";
+            $types .= "s";
+            $params[] = $filtros['dificultad'];
+        }
+
+        if (!empty($filtros['tipo'])) {
+            $where[] = "recetas.tipo = ?";
+            $types .= "s";
+            $params[] = $filtros['tipo'];
+        }
+
+        if (!empty($filtros['duracion'])) {
+            switch ($filtros['duracion']) {
+                case '0-30': $where[] = "recetas.duracion <= 30"; break;
+                case '30-60': $where[] = "recetas.duracion > 30 AND recetas.duracion <= 60"; break;
+                case '60-120': $where[] = "recetas.duracion > 60 AND recetas.duracion <= 120"; break;
+                case '120+': $where[] = "recetas.duracion > 120"; break;
+            }
+        }
+
+        if (!empty($filtros['usuario'])) {
+            $where[] = "recetas.usuario_id = ?";
+            $types .= "i";
+            $params[] = $filtros['usuario'];
+        }
+
+        return [$where, $params, $types];
+    }
+
+    // Obtener por ID
+    public function obtenerPorId($id) {
+        $sql = "SELECT r.*, u.nombre AS nombre_autor FROM recetas r 
+                JOIN usuarios u ON r.usuario_id = u.id WHERE r.id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    // Obtener ingredientes
+    public function obtenerIngredientes($id_receta) {
+        $sql = "SELECT * FROM ingredientes WHERE receta_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $id_receta);
+        $stmt->execute();
+        return $stmt->get_result();
+    }
+
+    // Crear receta
+    public function crear($datos, $usuario_id) {
+        $sql = "INSERT INTO recetas (titulo, duracion, dificultad, origen, tipo, preparacion, imagen_url, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("sisssssi", $datos['titulo'], $datos['duracion'], $datos['dificultad'], $datos['origen'], $datos['tipo'], $datos['preparacion'], $datos['imagen'], $usuario_id);
+        
+        if ($stmt->execute()) {
+            return $this->db->insert_id;
+        }
+        return false;
+    }
+
+    // Guardar ingredientes
+    public function guardarIngredientes($receta_id, $nombres, $cantidades) {
+        $sql = "INSERT INTO ingredientes (receta_id, nombre, cantidad) VALUES (?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        
+        for ($i = 0; $i < count($nombres); $i++) {
+            if (!empty($nombres[$i])) {
+                $stmt->bind_param("iss", $receta_id, $nombres[$i], $cantidades[$i]);
+                $stmt->execute();
+            }
+        }
+    }
+
+    // Actualizar receta
+    public function actualizar($id, $datos) {
+        if (!empty($datos['imagen'])) {
+            $sql = "UPDATE recetas SET titulo=?, duracion=?, dificultad=?, origen=?, tipo=?, preparacion=?, imagen_url=? WHERE id=?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("sisssssi", $datos['titulo'], $datos['duracion'], $datos['dificultad'], $datos['origen'], $datos['tipo'], $datos['preparacion'], $datos['imagen'], $id);
+        } else {
+            $sql = "UPDATE recetas SET titulo=?, duracion=?, dificultad=?, origen=?, tipo=?, preparacion=? WHERE id=?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("sissssi", $datos['titulo'], $datos['duracion'], $datos['dificultad'], $datos['origen'], $datos['tipo'], $datos['preparacion'], $id);
+        }
+        return $stmt->execute();
+    }
+
+    // Eliminar ingredientes
+    public function borrarIngredientes($receta_id) {
+        $stmt = $this->db->prepare("DELETE FROM ingredientes WHERE receta_id = ?");
+        $stmt->bind_param("i", $receta_id);
+        $stmt->execute();
+    }
+
+    // Eliminar receta
+    public function borrar($id) {
+        $this->borrarIngredientes($id);
+        $stmt = $this->db->prepare("DELETE FROM recetas WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        return $stmt->execute();
+    }
+
+    // Obtener favoritos con paginación
+    public function obtenerFavoritos($usuario_id, $limit = 9, $offset = 0) {
+        $sql = "SELECT r.*, u.nombre as nombre_autor 
+                FROM recetas r 
+                INNER JOIN favoritos f ON r.id = f.receta_id 
+                INNER JOIN usuarios u ON r.usuario_id = u.id 
+                WHERE f.usuario_id = ? LIMIT ? OFFSET ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("iii", $usuario_id, $limit, $offset);
+        $stmt->execute();
+        return $stmt->get_result();
+    }
+
+    // Contar total de favoritos
+    public function contarFavoritos($usuario_id) {
+        $sql = "SELECT COUNT(*) as total FROM favoritos WHERE usuario_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $usuario_id);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res['total'];
+    }
+
+    // Orígenes en uso
+    public function obtenerOrigenesEnUso() {
+        $sql = "SELECT DISTINCT origen FROM recetas WHERE origen IS NOT NULL AND origen != '' ORDER BY origen ASC";
+        return $this->db->query($sql);
+    }
+
+    // Tipos en uso
+    public function obtenerTiposEnUso() {
+        $sql = "SELECT DISTINCT tipo FROM recetas WHERE tipo IS NOT NULL AND tipo != '' ORDER BY tipo ASC";
+        return $this->db->query($sql);
+    }
+
+    // Usuarios con recetas
+    public function obtenerUsuariosConRecetas() {
+        $sql = "SELECT DISTINCT u.id, u.nombre 
+                FROM usuarios u 
+                INNER JOIN recetas r ON u.id = r.usuario_id 
+                ORDER BY u.nombre ASC";
+        return $this->db->query($sql);
+    }
+}

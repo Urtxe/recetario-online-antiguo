@@ -1,0 +1,17 @@
+/* Estilos fundamentales (variables, reset, tipografía) */
+@import url('parts/base.css');
+
+/* Estructura de página (header, footer, contenedores) */
+@import url('parts/layout.css');
+
+/* Componentes reutilizables (botones, alertas, modales) */
+@import url('parts/componentes.css');
+
+/* Formularios y campos de entrada */
+@import url('parts/formularios.css');
+
+/* Grid de recetas y vista detalle */
+@import url('parts/recetas.css');
+
+/* Página de autenticación (login/registro) */
+@import url('parts/auth.css');

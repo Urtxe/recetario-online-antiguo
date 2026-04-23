@@ -1,0 +1,62 @@
+/* Ajuste del tamaño de fuente base */
+html {
+    font-size: 16px;
+}
+
+/* Configuración general del body */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #F9F6F2;
+    color: #333333;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/* Enlaces globales */
+a {
+    color: #000000;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #D35400;
+}
+
+/* Imágenes responsivas */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Variables de colores (usando custom properties) */
+:root {
+    --color-primary: #E67E22;
+    --color-primary-dark: #D35400;
+    --color-primary-hover: #c56200;
+    --color-secondary: #333333;
+    --color-text: #555;
+    --color-text-light: #777;
+    --color-border: #DDDDDD;
+    --color-border-light: #eeeeee;
+    --color-background: #F9F6F2;
+    --color-white: #FFFFFF;
+    --color-error: #dc3545;
+    --color-error-light: #E74C3C;
+    --color-success: #d4edda;
+    --color-placeholder: #888888;
+    
+    /* Sombras */
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.05);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 15px rgba(0,0,0,0.1);
+    --shadow-xl: 0 8px 32px rgba(0,0,0,0.3);
+    
+    /* Bordes redondeados */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-full: 50px;
+}

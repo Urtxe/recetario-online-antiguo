@@ -1,0 +1,102 @@
+/* ========== FORMULARIO DE FILTROS ========== */
+
+.form-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: var(--color-background);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.form-filtros select,
+.form-filtros input[type="text"] {
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    flex-grow: 1;
+    background-color: var(--color-white);
+    transition: border-color 0.2s ease;
+}
+
+.form-filtros select:focus,
+.form-filtros input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* ========== FORMULARIO DE EDICIÓN ========== */
+
+.content-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.content-card form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.content-card form input,
+.content-card form textarea,
+.content-card form select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.content-card form input:focus,
+.content-card form textarea:focus,
+.content-card form select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* ========== INGREDIENTES ========== */
+
+/* Contenedor de ingrediente en formulario de edición */
+.ingredient-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.ingredient-item input {
+    flex: 1;
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: var(--radius-sm);
+    width: 100%;
+}
+
+/* Lista de ingredientes en vista detalle */
+.ingredient-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ingredient-list li {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ingredient-list li:last-child {
+    border-bottom: none;
+}
