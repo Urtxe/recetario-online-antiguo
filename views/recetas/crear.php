@@ -1,6 +1,7 @@
 <div class="content-card">
     <h2>Crear Nueva Receta</h2>
     <form action="index.php?controller=receta&action=guardar" method="POST" enctype="multipart/form-data">
+        <?php echo csrf_field(); ?>
         
         <label>Nombre de la Receta (Título):</label>
         <input type="text" name="titulo" required>

@@ -5,17 +5,17 @@ class Database {
 
     public static function conectar() {
         if (self::$instancia === null) {
-            $servidor = 'localhost';
-            $usuario  = 'root';
-            $password = '';
-            $bd       = 'recetario';
+            $servidor = getenv('DB_HOST') ?: 'localhost';
+            $usuario  = getenv('DB_USER') ?: 'root';
+            $password = getenv('DB_PASS') ?: '';
+            $bd       = getenv('DB_NAME') ?: 'recetario';
 
             $conexion = new mysqli($servidor, $usuario, $password, $bd);
 
             if ($conexion->connect_error) {
                 die('Error de conexión: ' . $conexion->connect_error);
             }
-            $conexion->set_charset('utf8');
+            $conexion->set_charset('utf8mb4');
             self::$instancia = $conexion;
         }
         return self::$instancia;

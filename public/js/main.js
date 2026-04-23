@@ -1,5 +1,8 @@
 // Gestión de favoritos y modal de imagen
 document.addEventListener("DOMContentLoaded", function() {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
     // Alternar favoritos con delegación de eventos:
     // funciona aunque el grid se reemplace por AJAX o cambie de página.
     document.addEventListener('click', function(e) {
@@ -11,12 +14,20 @@ document.addEventListener("DOMContentLoaded", function() {
         const recetaId = btn.getAttribute('data-id');
         const desdeFavoritos = btn.hasAttribute('data-from-favorites');
 
-        fetch(`index.php?controller=receta&action=favorito&id=${recetaId}`)
+        fetch('index.php?controller=receta&action=favorito', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                id: recetaId,
+                _csrf_token: csrfToken
+            })
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const estadoTexto = btn.textContent.trim();
-                    if (desdeFavoritos && estadoTexto === '❤️') {
+                    if (desdeFavoritos && !data.favorito) {
                         // Remover tarjeta en Mis Favoritos al quitar corazón
                         const tarjeta = btn.closest('.receta-item');
                         if (tarjeta) {
@@ -26,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                     } else {
                         // En otras páginas solo cambiar emoji
-                        btn.textContent = (estadoTexto === '❤️') ? '🤍' : '❤️';
+                        btn.textContent = data.favorito ? '❤️' : '🤍';
                     }
                 }
             })

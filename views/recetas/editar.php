@@ -1,6 +1,7 @@
 <div class="content-card">
     <h2>Modificar Receta</h2>
     <form action="index.php?controller=receta&action=actualizar" method="POST" enctype="multipart/form-data">
+        <?php echo csrf_field(); ?>
         
         <input type="hidden" name="id_receta" value="<?php echo $receta['id']; ?>">
         

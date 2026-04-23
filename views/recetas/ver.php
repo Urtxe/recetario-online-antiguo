@@ -46,8 +46,11 @@
         <hr>
         <div class="receta-acciones-bottom" style="margin-top: 20px; text-align: center;">
             <a href="index.php?controller=receta&action=editar&id=<?php echo $receta['id']; ?>" class="btn-editar" style="background: #E67E22; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; font-weight: bold;">Editar Receta</a>
-            
-            <a href="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" class="btn-borrar" style="background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;" onclick="return confirm('¿Seguro que quieres borrarla?');">Borrar Receta</a>
+            <form action="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" method="post" style="display:inline;" onsubmit="return confirm('¿Seguro que quieres borrarla?');">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="id" value="<?php echo $receta['id']; ?>">
+                <button type="submit" class="btn-borrar" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold;">Borrar Receta</button>
+            </form>
         </div>
     <?php endif; ?>
 

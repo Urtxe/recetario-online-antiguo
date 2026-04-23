@@ -1,6 +1,12 @@
 <?php
 // Enrutador Principal (Front Controller)
 session_start();
+require_once 'config/helpers.php';
+
+$rutas_permitidas = [
+    'auth' => ['login', 'registro', 'logout'],
+    'receta' => ['index', 'ver', 'crear', 'guardar', 'editar', 'actualizar', 'borrar', 'misFavoritos', 'favorito']
+];
 
 // Determinar controlador y acción
 if (!isset($_SESSION['usuario_id'])) {
@@ -16,6 +22,12 @@ if (!isset($_SESSION['usuario_id'])) {
     // Usuario logueado: ir a 'receta' por defecto
     $controller = $_GET['controller'] ?? 'receta';
     $action = $_GET['action'] ?? 'index';
+}
+
+if (!isset($rutas_permitidas[$controller]) || !in_array($action, $rutas_permitidas[$controller], true)) {
+    http_response_code(404);
+    echo 'Error: ruta no permitida';
+    exit();
 }
 
 // Cargar controlador dinámicamente
