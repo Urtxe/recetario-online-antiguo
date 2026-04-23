@@ -36,7 +36,11 @@ $uModel = new Usuario();
                 <?php if ($_SESSION['usuario_id'] == $receta['usuario_id']): ?>
                     <div class="grid-admin-buttons">
                         <a href="index.php?controller=receta&action=editar&id=<?php echo $receta['id']; ?>" class="btn-edit-mini">Editar</a>
-                        <a href="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" class="btn-delete-mini" onclick="return confirm('¿Seguro?')">Borrar</a>
+                        <form action="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" method="post" style="display:inline;" onsubmit="return confirm('¿Seguro?')">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="id" value="<?php echo $receta['id']; ?>">
+                            <button type="submit" class="btn-delete-mini">Borrar</button>
+                        </form>
                     </div>
                 <?php endif; ?>
             </div>

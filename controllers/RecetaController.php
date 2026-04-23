@@ -1,6 +1,7 @@
 <?php
 require_once 'models/Receta.php';
 require_once 'models/Usuario.php';
+require_once 'config/helpers.php';
 
 class RecetaController {
     
@@ -92,6 +93,7 @@ class RecetaController {
         $this->verificarSesion();
         
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            require_csrf_token($_POST['_csrf_token'] ?? '');
             // Validar campos obligatorios
             $titulo = trim($_POST['titulo'] ?? '');
             $preparacion = trim($_POST['preparacion'] ?? '');
@@ -160,6 +162,7 @@ class RecetaController {
         }
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            require_csrf_token($_POST['_csrf_token'] ?? '');
             // Gestionar imagen
             $nombre_imagen = $receta['imagen_url'];
             if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
@@ -218,10 +221,15 @@ class RecetaController {
 
     public function borrar($id) {
         $this->verificarSesion();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit('Método no permitido');
+        }
+        require_csrf_token($_POST['_csrf_token'] ?? '');
         $modelo = new Receta();
         $receta = $modelo->obtenerPorId($id);
 
-        if ($receta['usuario_id'] == $_SESSION['usuario_id']) {
+        if ($receta && $receta['usuario_id'] == $_SESSION['usuario_id']) {
             $modelo->borrar($id);
         }
         header('Location: index.php');
@@ -250,13 +258,24 @@ class RecetaController {
 
     public function favorito() {
         $this->verificarSesion();
-        $receta_id = $_GET['id'] ?? null;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            exit();
+        }
+
+        require_csrf_token($_POST['_csrf_token'] ?? '');
+
+        $receta_id = $_POST['id'] ?? null;
         $usuario_id = $_SESSION['usuario_id'];
 
         if ($receta_id) {
             $uModel = new Usuario();
             $resultado = $uModel->toggleFavorito($usuario_id, $receta_id);
-            echo json_encode(['success' => $resultado]);
+            echo json_encode([
+                'success' => $resultado,
+                'favorito' => $uModel->esFavorito($usuario_id, $receta_id)
+            ]);
         }
         exit();
     }

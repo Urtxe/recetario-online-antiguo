@@ -25,6 +25,7 @@
       <?php endif; ?>
 
       <form action="index.php?controller=auth&action=login" method="post">
+        <?php echo csrf_field(); ?>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required placeholder="ejemplo@correo.com">
         
@@ -44,6 +45,7 @@
       <?php endif; ?>
 
       <form action="index.php?controller=auth&action=registro" method="post">
+        <?php echo csrf_field(); ?>
         <label for="reg-usuario">Usuario:</label>
         <input type="text" id="reg-usuario" name="usuario" required>
         
