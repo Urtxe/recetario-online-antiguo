@@ -1,16 +1,49 @@
 <?php
 require_once 'config/Database.php';
+require_once 'config/helpers.php';
 
 class Usuario {
     private $db;
+    private $usuarioColumns = null;
 
     public function __construct() {
         $this->db = Database::conectar();
     }
 
+    private function columnasUsuario() {
+        if ($this->usuarioColumns !== null) {
+            return $this->usuarioColumns;
+        }
+
+        $this->usuarioColumns = [];
+        $res = $this->db->query("SHOW COLUMNS FROM usuarios");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $this->usuarioColumns[] = $row['Field'];
+            }
+        }
+
+        return $this->usuarioColumns;
+    }
+
+    private function tieneColumnaUsuario($nombre) {
+        return in_array($nombre, $this->columnasUsuario(), true);
+    }
+
     // Autenticar usuario
     public function login($email, $password) {
-        $sql = "SELECT id, nombre, email, password FROM usuarios WHERE email = ?";
+        $fields = ['id', 'nombre', 'email', 'password'];
+        if ($this->tieneColumnaUsuario('rol')) {
+            $fields[] = 'rol';
+        }
+        if ($this->tieneColumnaUsuario('two_factor_enabled')) {
+            $fields[] = 'two_factor_enabled';
+        }
+        if ($this->tieneColumnaUsuario('two_factor_secret')) {
+            $fields[] = 'two_factor_secret';
+        }
+
+        $sql = "SELECT " . implode(', ', $fields) . " FROM usuarios WHERE email = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -46,8 +79,44 @@ class Usuario {
         return $stmt->get_result()->num_rows > 0;
     }
 
+    public function obtenerPorEmail($email) {
+        $fields = ['id', 'nombre', 'email', 'password'];
+        if ($this->tieneColumnaUsuario('rol')) {
+            $fields[] = 'rol';
+        }
+        if ($this->tieneColumnaUsuario('two_factor_enabled')) {
+            $fields[] = 'two_factor_enabled';
+        }
+        if ($this->tieneColumnaUsuario('two_factor_secret')) {
+            $fields[] = 'two_factor_secret';
+        }
+
+        $stmt = $this->db->prepare("SELECT " . implode(', ', $fields) . " FROM usuarios WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
     public function obtenerPorId($id) {
         $stmt = $this->db->prepare("SELECT id, nombre, email, password FROM usuarios WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    public function obtenerPorIdConSeguridad($id) {
+        $fields = ['id', 'nombre', 'email', 'password'];
+        if ($this->tieneColumnaUsuario('rol')) {
+            $fields[] = 'rol';
+        }
+        if ($this->tieneColumnaUsuario('two_factor_enabled')) {
+            $fields[] = 'two_factor_enabled';
+        }
+        if ($this->tieneColumnaUsuario('two_factor_secret')) {
+            $fields[] = 'two_factor_secret';
+        }
+
+        $stmt = $this->db->prepare("SELECT " . implode(', ', $fields) . " FROM usuarios WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc();
@@ -71,6 +140,40 @@ class Usuario {
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $this->db->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
         $stmt->bind_param("si", $passwordHash, $id);
+        return $stmt->execute();
+    }
+
+    public function activarDosFactores($id, $secret) {
+        if (!$this->tieneColumnaUsuario('two_factor_enabled') || !$this->tieneColumnaUsuario('two_factor_secret')) {
+            return false;
+        }
+
+        $enabled = 0;
+        $stmt = $this->db->prepare("UPDATE usuarios SET two_factor_secret = ?, two_factor_enabled = ? WHERE id = ?");
+        $stmt->bind_param("sii", $secret, $enabled, $id);
+        return $stmt->execute();
+    }
+
+    public function confirmarDosFactores($id) {
+        if (!$this->tieneColumnaUsuario('two_factor_enabled')) {
+            return false;
+        }
+
+        $enabled = 1;
+        $stmt = $this->db->prepare("UPDATE usuarios SET two_factor_enabled = ? WHERE id = ?");
+        $stmt->bind_param("ii", $enabled, $id);
+        return $stmt->execute();
+    }
+
+    public function desactivarDosFactores($id) {
+        if (!$this->tieneColumnaUsuario('two_factor_enabled') || !$this->tieneColumnaUsuario('two_factor_secret')) {
+            return false;
+        }
+
+        $enabled = 0;
+        $secret = '';
+        $stmt = $this->db->prepare("UPDATE usuarios SET two_factor_secret = ?, two_factor_enabled = ? WHERE id = ?");
+        $stmt->bind_param("sii", $secret, $enabled, $id);
         return $stmt->execute();
     }
 

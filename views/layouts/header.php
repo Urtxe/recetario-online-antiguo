@@ -32,9 +32,9 @@
         </nav>
     </header>
 
-    <?php if (isset($_SESSION['mensaje_flash'])): ?>
+<?php if (isset($_SESSION['mensaje_flash'])): ?>
     <div class="alerta alerta-<?php echo $_SESSION['tipo_flash']; ?>" id="flash-message">
-        <?php echo $_SESSION['mensaje_flash']; ?>
+        <?php echo htmlspecialchars($_SESSION['mensaje_flash'], ENT_QUOTES, 'UTF-8'); ?>
     </div>
     <?php unset($_SESSION['mensaje_flash'], $_SESSION['tipo_flash']); ?>
     <script>
