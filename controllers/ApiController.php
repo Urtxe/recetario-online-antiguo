@@ -68,4 +68,56 @@ class ApiController {
         ]);
         exit();
     }
+
+    public function receta() {
+        $this->verificarSesion();
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID de receta no válido']);
+            exit();
+        }
+
+        $modelo = new Receta();
+        $receta = $modelo->obtenerPorId($id);
+
+        if (!$receta) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Receta no encontrada']);
+            exit();
+        }
+
+        $ingredientes = [];
+        $resultadoIngredientes = $modelo->obtenerIngredientes($id);
+        while ($ing = $resultadoIngredientes->fetch_assoc()) {
+            $ingredientes[] = [
+                'nombre' => $ing['nombre'],
+                'cantidad' => $ing['cantidad']
+            ];
+        }
+
+        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'id' => (int)$receta['id'],
+                'titulo' => $receta['titulo'],
+                'duracion' => (int)$receta['duracion'],
+                'dificultad' => $receta['dificultad'],
+                'origen' => $receta['origen'],
+                'tipo' => $receta['tipo'],
+                'imagen_url' => $receta['imagen_url'],
+                'nombre_autor' => $receta['nombre_autor'],
+                'usuario_id' => (int)$receta['usuario_id'],
+                'preparacion' => $receta['preparacion'],
+                'ingredientes' => $ingredientes,
+                'es_favorito' => isset($favoritos_ids[$id])
+            ]
+        ]);
+        exit();
+    }
 }
