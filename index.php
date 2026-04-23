@@ -5,6 +5,7 @@ require_once 'config/helpers.php';
 
 $rutas_permitidas = [
     'auth' => ['login', 'registro', 'logout', 'perfil', 'actualizarPerfil'],
+    'api' => ['recetas'],
     'receta' => ['index', 'ver', 'crear', 'guardar', 'editar', 'actualizar', 'borrar', 'misFavoritos', 'favorito']
 ];
 
