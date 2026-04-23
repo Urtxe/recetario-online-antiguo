@@ -39,6 +39,7 @@ class RecetaController {
         $lista_origenes = $modelo->obtenerOrigenesEnUso();
         $lista_tipos = $modelo->obtenerTiposEnUso();
         $lista_usuarios = $modelo->obtenerUsuariosConRecetas();
+        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
 
         // Búsqueda filtrada
         $recetas = $modelo->listarConFiltros($filtros, $por_pagina, $offset);
@@ -246,6 +247,7 @@ class RecetaController {
         
         $modelo = new Receta();
         $recetas = $modelo->obtenerFavoritos($_SESSION['usuario_id'], $por_pagina, $offset);
+        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
         $total_favoritos = $modelo->contarFavoritos($_SESSION['usuario_id']);
         $total_paginas = ceil($total_favoritos / $por_pagina);
         $titulo_pagina = 'Mis Favoritos';

@@ -1,13 +1,12 @@
 <?php 
-// Verificar favoritos
-$uModel = new Usuario(); 
+// Verificar favoritos con lista precargada desde el controlador
 ?>
 
 <div class="recetas-grid-container">
     <?php if ($recetas && $recetas->num_rows > 0): ?>
         <?php while($receta = $recetas->fetch_assoc()): ?>
             <div class="receta-item">
-                <?php $esFav = $uModel->esFavorito($_SESSION['usuario_id'], $receta['id']); ?>
+                <?php $esFav = isset($favoritos_ids[$receta['id']]); ?>
                 <div class="btn-fav-container">
                     <button class="btn-fav" data-id="<?php echo $receta['id']; ?>" <?php echo (isset($desde_favoritos) && $desde_favoritos) ? 'data-from-favorites="1"' : ''; ?>>
                         <?php echo $esFav ? '❤️' : '🤍'; ?>
