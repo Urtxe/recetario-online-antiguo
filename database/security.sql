@@ -1,13 +1,81 @@
--- Seguridad y soporte operativo para Recetario Online
--- Ejecutar sobre la base de datos existente.
+-- Migracion local de seguridad para Recetario Online
+-- Ejecutar sobre la base de datos seleccionada previamente.
+-- Si existen duplicados en usuarios.email o favoritos(usuario_id, receta_id), elimínalos antes
+-- de crear los índices únicos.
 
-ALTER TABLE usuarios
-    ADD COLUMN IF NOT EXISTS rol VARCHAR(20) NOT NULL DEFAULT 'usuario',
-    ADD COLUMN IF NOT EXISTS two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255) NULL;
+SET @db_name := DATABASE();
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_email_unique ON usuarios (email);
+-- Columnas nuevas en usuarios
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = @db_name
+              AND table_name = 'usuarios'
+              AND column_name = 'rol'
+        ),
+        'SELECT 1',
+        'ALTER TABLE usuarios ADD COLUMN rol VARCHAR(20) NOT NULL DEFAULT ''usuario'''
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = @db_name
+              AND table_name = 'usuarios'
+              AND column_name = 'two_factor_enabled'
+        ),
+        'SELECT 1',
+        'ALTER TABLE usuarios ADD COLUMN two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = @db_name
+              AND table_name = 'usuarios'
+              AND column_name = 'two_factor_secret'
+        ),
+        'SELECT 1',
+        'ALTER TABLE usuarios ADD COLUMN two_factor_secret VARCHAR(255) NULL'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Indice unico por email de usuario
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'usuarios'
+              AND index_name = 'idx_usuarios_email_unique'
+        ),
+        'SELECT 1',
+        'CREATE UNIQUE INDEX idx_usuarios_email_unique ON usuarios (email)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Tabla para rate limiting local o compartido
 CREATE TABLE IF NOT EXISTS security_rate_limits (
     rate_key CHAR(64) NOT NULL,
     attempts INT NOT NULL DEFAULT 0,
@@ -16,6 +84,7 @@ CREATE TABLE IF NOT EXISTS security_rate_limits (
     PRIMARY KEY (rate_key)
 );
 
+-- Tokens de recuperacion de contraseña
 CREATE TABLE IF NOT EXISTS password_resets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
@@ -27,4 +96,20 @@ CREATE TABLE IF NOT EXISTS password_resets (
     INDEX idx_password_resets_token (token_hash)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_favoritos_unique ON favoritos (usuario_id, receta_id);
+-- Evitar favoritos duplicados
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'favoritos'
+              AND index_name = 'idx_favoritos_unique'
+        ),
+        'SELECT 1',
+        'CREATE UNIQUE INDEX idx_favoritos_unique ON favoritos (usuario_id, receta_id)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

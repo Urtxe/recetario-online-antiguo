@@ -1,86 +1,99 @@
-/* Importar todos los módulos base */
 @import url('parts/base.css');
 @import url('parts/componentes.css');
 @import url('parts/formularios.css');
 
-/* Estilos específicos para auth sin :has() */
-/* Este archivo NO importa layout.css para evitar conflictos */
-
-/* ========== BODY DE AUTH ========== */
 body {
     width: 100%;
     max-width: none;
-    padding: 0;
+    min-height: 100svh;
     margin: 0;
-    background-image: url("../img/portada-login2.png");
-    background-size: 100% 100%; 
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
+    padding: 96px 16px 40px;
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    min-height: 100vh;
-    padding-top: 150px;
-    box-sizing: border-box;
+    background:
+        linear-gradient(180deg, rgba(255, 248, 238, 0.88), rgba(255, 255, 255, 0.6)),
+        url("../img/portada-login2.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
 }
-
-/* ========== ELEMENTOS DE AUTH ========== */
 
 .titulo {
     position: absolute;
-    top: 20px;
+    top: 22px;
     left: 50%;
     transform: translateX(-50%);
-    font-family: 'Arial', sans-serif;
-    font-size: 50px;
-    color: #333;
+    width: calc(100% - 32px);
     margin: 0;
-    text-align: center;
-    width: 100%;
     z-index: 10;
+    text-align: center;
+    font-family: 'Arial', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    color: #2f2f2f;
+    text-shadow: 0 2px 10px rgba(255, 255, 255, 0.45);
 }
 
 .contenedor-auth {
-    width: 350px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: min(460px, 100%);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: var(--radius-lg);
     overflow: hidden;
     font-family: Arial, sans-serif;
-    background-color: rgba(255, 255, 255, 0.7); 
+    background-color: rgba(255, 255, 255, 0.76);
     box-shadow: var(--shadow-xl);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    margin: 0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     position: relative;
     z-index: 5;
 }
 
+.auth-banner,
+.auth-note {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    background: rgba(255, 255, 255, 0.72);
+    color: #4a3b20;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.auth-note {
+    margin: 0 0 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .botones {
     display: flex;
-    background-color: rgba(241, 241, 241, 0.5);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(241, 241, 241, 0.55);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tab-btn {
     flex: 1;
-    padding: 15px;
+    padding: 16px 14px;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 1rem;
     background-color: transparent;
-    transition: background-color 0.3s;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .tab-btn.activo {
     background-color: var(--color-white);
     border-bottom: 2px solid var(--color-primary);
     color: var(--color-primary);
-    font-weight: bold;
+    font-weight: 700;
 }
 
-.tab-btn:hover:not(.activo) {
-    background-color: #e2e2e2;
+.tab-btn:hover:not(.activo),
+.tab-btn:focus-visible {
+    background-color: rgba(255, 255, 255, 0.9);
+    outline: none;
 }
 
 .paneles {
@@ -94,6 +107,11 @@ body {
 
 .panel.activo {
     display: block;
+}
+
+.panel h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
 }
 
 .panel form label {
@@ -111,16 +129,17 @@ body {
     border-radius: var(--radius-sm);
     box-sizing: border-box;
     font-size: 1rem;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .panel form input:focus {
     outline: none;
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(76, 118, 255, 0.12);
 }
 
 .panel form button {
-    margin-top: 20px;
+    margin-top: 18px;
     padding: 12px;
     width: 100%;
     background-color: var(--color-primary);
@@ -128,13 +147,23 @@ body {
     border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 700;
     font-size: 1rem;
-    transition: background 0.2s;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .panel form button:hover {
     background-color: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+.panel a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.panel a:hover {
+    text-decoration: underline;
 }
 
 .footer {
@@ -146,6 +175,36 @@ body {
     font-size: 12px;
     color: #666;
     text-align: center;
-    width: 100%;
+    width: calc(100% - 32px);
     z-index: 10;
+}
+
+@media (max-width: 640px) {
+    body {
+        padding-top: 78px;
+        background-attachment: scroll;
+    }
+
+    .titulo {
+        top: 16px;
+        font-size: clamp(1.8rem, 7vw, 2.4rem);
+    }
+
+    .contenedor-auth {
+        width: 100%;
+    }
+
+    .paneles {
+        padding: 16px;
+    }
+
+    .tab-btn {
+        padding: 14px 10px;
+    }
+
+    .footer {
+        position: static;
+        transform: none;
+        margin-top: 18px;
+    }
 }
