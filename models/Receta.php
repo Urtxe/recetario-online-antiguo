@@ -191,6 +191,22 @@ class Receta {
         return $stmt->get_result();
     }
 
+    // Obtener solo los IDs de recetas favoritas de un usuario
+    public function obtenerIdsFavoritos($usuario_id) {
+        $sql = "SELECT receta_id FROM favoritos WHERE usuario_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $usuario_id);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $ids = [];
+        while ($row = $result->fetch_assoc()) {
+            $ids[] = (int)$row['receta_id'];
+        }
+
+        return $ids;
+    }
+
     // Contar total de favoritos
     public function contarFavoritos($usuario_id) {
         $sql = "SELECT COUNT(*) as total FROM favoritos WHERE usuario_id = ?";
