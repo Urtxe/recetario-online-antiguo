@@ -4,6 +4,10 @@
 /.vscode/
 /public/uploads/*
 !/public/uploads/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+!/storage/.gitkeep
+/storage/password_resets.json
 *.log
 Thumbs.db
 .DS_Store

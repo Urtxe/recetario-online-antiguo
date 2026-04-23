@@ -21,7 +21,7 @@
     <div id="panel-login" class="panel <?php echo isset($error_registro) ? '' : 'activo'; ?>">
       <h3>Iniciar Sesión</h3>
       <?php if (isset($error_login)): ?>
-        <p class="error-msg" style="color: red; text-align:center;"><?php echo $error_login; ?></p>
+        <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_login, ENT_QUOTES, 'UTF-8'); ?></p>
       <?php endif; ?>
 
       <form action="index.php?controller=auth&action=login" method="post">
@@ -34,6 +34,10 @@
         
         <button type="submit">Entrar</button>
       </form>
+
+      <div style="margin-top: 15px; text-align: center;">
+        <a href="#panel-recuperacion" style="font-size: 0.9rem;">¿Has olvidado tu contraseña?</a>
+      </div>
     </div>
 
     <!-- Panel Registro -->
@@ -41,7 +45,7 @@
       <h3>Crear Cuenta</h3>
 
       <?php if (isset($error_registro)): ?>
-        <p class="error-msg" style="color: red; text-align:center;"><?php echo $error_registro; ?></p>
+        <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_registro, ENT_QUOTES, 'UTF-8'); ?></p>
       <?php endif; ?>
 
       <form action="index.php?controller=auth&action=registro" method="post">
@@ -59,6 +63,45 @@
         <input type="password" id="reg-pass-conf" name="password-confirm" required>
         
         <button type="submit">Registrarme</button>
+      </form>
+    </div>
+
+    <?php if (isset($_SESSION['pending_2fa_user'])): ?>
+      <div id="panel-2fa" class="panel activo" style="margin-top: 20px;">
+        <h3>Verificación en dos pasos</h3>
+        <?php if (isset($error_2fa)): ?>
+          <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_2fa); ?></p>
+        <?php endif; ?>
+        <form action="index.php?controller=auth&action=verificar2fa" method="post">
+          <?php echo csrf_field(); ?>
+          <label for="codigo_2fa">Código de verificación</label>
+          <input type="text" id="codigo_2fa" name="codigo_2fa" required inputmode="numeric" autocomplete="one-time-code">
+          <button type="submit">Verificar</button>
+        </form>
+      </div>
+    <?php endif; ?>
+
+    <div id="panel-recuperacion" class="panel activo" style="margin-top: 20px;">
+      <h3>Recuperar contraseña</h3>
+      <form action="index.php?controller=auth&action=solicitarRecuperacion" method="post">
+        <?php echo csrf_field(); ?>
+        <label for="reset-email">Email</label>
+        <input type="email" id="reset-email" name="email" required>
+        <button type="submit">Solicitar enlace</button>
+      </form>
+
+      <form action="index.php?controller=auth&action=resetearPassword" method="post" style="margin-top: 15px;">
+        <?php echo csrf_field(); ?>
+        <label for="reset-token">Token de recuperación</label>
+        <input type="text" id="reset-token" name="reset_token" required>
+
+        <label for="reset-pass">Nueva contraseña</label>
+        <input type="password" id="reset-pass" name="password" required>
+
+        <label for="reset-pass-confirm">Confirmar contraseña</label>
+        <input type="password" id="reset-pass-confirm" name="password_confirm" required>
+
+        <button type="submit">Cambiar contraseña</button>
       </form>
     </div>
     

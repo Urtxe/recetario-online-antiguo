@@ -27,6 +27,15 @@ class AuthService {
         $user = $this->usuarioModel->login($email, $password);
         if ($user) {
             rate_limit_clear($limiterKey);
+            if (is_admin_user($user) && !empty($user['two_factor_enabled']) && !empty($user['two_factor_secret'])) {
+                security_log('login_requires_2fa', ['email' => $user['email'] ?? null]);
+                return [
+                    'success' => false,
+                    'requires_2fa' => true,
+                    'user' => $user,
+                    'error' => 'Introduce tu código de verificación'
+                ];
+            }
             return [
                 'success' => true,
                 'user' => $user
@@ -34,6 +43,7 @@ class AuthService {
         }
 
         rate_limit_register_failure($limiterKey);
+        security_log('login_failed', ['email' => strtolower($email)]);
         return [
             'success' => false,
             'error' => 'Usuario o contraseña incorrectos'
@@ -65,7 +75,7 @@ class AuthService {
     }
 
     public function getProfileSummary($userId) {
-        $usuario = $this->usuarioModel->obtenerPorId($userId);
+        $usuario = $this->usuarioModel->obtenerPorIdConSeguridad($userId);
         if (!$usuario) {
             return ['success' => false, 'error' => 'No se pudo cargar el perfil'];
         }
@@ -119,6 +129,71 @@ class AuthService {
             return ['success' => false, 'error' => 'No se pudo cambiar la contraseña'];
         }
 
-        return ['success' => true, 'usuario' => $this->usuarioModel->obtenerPorId($userId)];
+        return ['success' => true, 'usuario' => $this->usuarioModel->obtenerPorIdConSeguridad($userId)];
+    }
+
+    public function startPasswordReset($email) {
+        $usuario = $this->usuarioModel->obtenerPorEmail($email);
+        $mensaje = 'Si el email existe, te enviaremos instrucciones para recuperar la contraseña.';
+
+        if (!$usuario) {
+            security_log('password_reset_requested_unknown_email', ['email' => strtolower($email)]);
+            return ['success' => true, 'message' => $mensaje];
+        }
+
+        $token = bin2hex(random_bytes(24));
+        $expiresAt = time() + 3600;
+        store_password_reset_token($email, hash('sha256', $token), $expiresAt);
+        security_log('password_reset_requested', ['email' => strtolower($email)]);
+
+        return [
+            'success' => true,
+            'message' => $mensaje,
+            'token' => $token,
+            'expires_at' => $expiresAt
+        ];
+    }
+
+    public function completePasswordReset($token, $password, $passwordConfirm) {
+        if ($password === '' || $password !== $passwordConfirm) {
+            return ['success' => false, 'error' => 'Las contraseñas no coinciden'];
+        }
+
+        $entry = find_password_reset_entry($token);
+        if (!$entry) {
+            return ['success' => false, 'error' => 'El enlace de recuperación no es válido o ha caducado'];
+        }
+
+        $usuario = $this->usuarioModel->obtenerPorEmail($entry['email']);
+        if (!$usuario) {
+            return ['success' => false, 'error' => 'No se pudo completar la recuperación'];
+        }
+
+        if (!$this->usuarioModel->cambiarPassword($usuario['id'], $password)) {
+            return ['success' => false, 'error' => 'No se pudo cambiar la contraseña'];
+        }
+
+        consume_password_reset_token($token);
+        security_log('password_reset_completed', ['email' => $entry['email']]);
+
+        return ['success' => true];
+    }
+
+    public function verifyAdminTwoFactor($user, $code) {
+        if (!$user) {
+            return ['success' => false, 'error' => 'Usuario no válido'];
+        }
+
+        if (empty($user['two_factor_secret'])) {
+            return ['success' => false, 'error' => 'El usuario no tiene 2FA configurado'];
+        }
+
+        if (!verify_totp_code($user['two_factor_secret'], $code)) {
+            security_log('admin_2fa_failed', ['email' => $user['email'] ?? null]);
+            return ['success' => false, 'error' => 'Código 2FA inválido'];
+        }
+
+        security_log('admin_2fa_success', ['email' => $user['email'] ?? null]);
+        return ['success' => true];
     }
 }

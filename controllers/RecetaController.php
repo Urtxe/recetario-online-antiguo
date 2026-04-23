@@ -68,11 +68,13 @@ class RecetaController {
         }
 
         if ($archivo['error'] !== UPLOAD_ERR_OK) {
+            security_log('upload_failed', ['reason' => 'upload_error', 'code' => $archivo['error']], 'warning');
             return [false, '', 'Error al subir la imagen'];
         }
 
         $maximoBytes = 2 * 1024 * 1024;
         if ($archivo['size'] > $maximoBytes) {
+            security_log('upload_failed', ['reason' => 'size_limit', 'size' => $archivo['size']], 'warning');
             return [false, '', 'La imagen supera el tamaño máximo permitido'];
         }
 
@@ -92,7 +94,19 @@ class RecetaController {
         }
 
         if (!isset($mimePermitidos[$mimeReal])) {
+            security_log('upload_failed', ['reason' => 'mime', 'mime' => $mimeReal], 'warning');
             return [false, '', 'Formato de imagen no válido'];
+        }
+
+        $dimensions = @getimagesize($archivo['tmp_name']);
+        if ($dimensions === false) {
+            security_log('upload_failed', ['reason' => 'invalid_image'], 'warning');
+            return [false, '', 'La imagen no es válida'];
+        }
+
+        if ($dimensions[0] > 4096 || $dimensions[1] > 4096) {
+            security_log('upload_failed', ['reason' => 'dimensions', 'width' => $dimensions[0], 'height' => $dimensions[1]], 'warning');
+            return [false, '', 'La imagen supera las dimensiones permitidas'];
         }
 
         if (!is_dir('public/uploads')) {
@@ -323,9 +337,11 @@ class RecetaController {
         $resultado = $this->recipeService->deleteRecipe($id, $_SESSION['usuario_id']);
         if ($resultado['success']) {
             $this->eliminarImagenSiExiste($resultado['receta']['imagen_url'] ?? '');
+            security_log('recipe_deleted', ['recipe_id' => (int)$id], 'warning');
         } else {
             $_SESSION['mensaje_flash'] = 'Error al borrar la receta';
             $_SESSION['tipo_flash'] = 'error';
+            security_log('recipe_delete_failed', ['recipe_id' => (int)$id], 'warning');
         }
 
         header('Location: index.php');

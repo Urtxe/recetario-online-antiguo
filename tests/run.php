@@ -71,6 +71,10 @@ class FakeUsuarioRepo {
         return $this->users[$id] ?? null;
     }
 
+    public function obtenerPorIdConSeguridad($id) {
+        return $this->obtenerPorId($id);
+    }
+
     public function existeEmailExceptoId($email, $id) {
         foreach ($this->users as $user) {
             if ($user['email'] === $email && $user['id'] != $id) {
@@ -301,6 +305,7 @@ $tests['admin_helper'] = function () {
     putenv('ADMIN_EMAIL=admin@example.com');
     assert_true(is_admin_user(['email' => 'admin@example.com']), 'La detección de admin debe funcionar');
     assert_true(!is_admin_user(['email' => 'user@example.com']), 'Un usuario normal no debe ser admin');
+    assert_true(is_admin_user(['usuario_rol' => 'admin', 'email' => 'user@example.com']), 'El rol admin debe mandar sobre el email');
     putenv('ADMIN_EMAIL=' . ($previous !== false ? $previous : ''));
 };
 

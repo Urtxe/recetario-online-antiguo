@@ -19,7 +19,7 @@ class AdminController {
             exit();
         }
 
-        $usuario = $this->usuarioModel->obtenerPorId($_SESSION['usuario_id']);
+        $usuario = $this->usuarioModel->obtenerPorIdConSeguridad($_SESSION['usuario_id']);
         if (!$usuario || !is_admin_user($usuario)) {
             http_response_code(403);
             exit('Acceso denegado');
@@ -58,9 +58,11 @@ class AdminController {
         if (!$resultado['success']) {
             $_SESSION['mensaje_flash'] = 'No se pudo borrar la receta';
             $_SESSION['tipo_flash'] = 'error';
+            security_log('admin_recipe_delete_failed', ['recipe_id' => (int)$id], 'warning');
         } else {
             $_SESSION['mensaje_flash'] = 'Receta moderada correctamente';
             $_SESSION['tipo_flash'] = 'success';
+            security_log('admin_recipe_deleted', ['recipe_id' => (int)$id], 'warning');
         }
 
         header('Location: index.php?controller=admin&action=dashboard');

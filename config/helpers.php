@@ -1,4 +1,192 @@
 <?php
+require_once 'config/Database.php';
+
+function app_env($key, $default = null) {
+    $value = getenv($key);
+    return ($value === false || $value === '') ? $default : $value;
+}
+
+function app_bool_env($key, $default = false) {
+    $value = strtolower((string)app_env($key, $default ? '1' : '0'));
+    return in_array($value, ['1', 'true', 'yes', 'on'], true);
+}
+
+function app_is_https() {
+    if (app_bool_env('APP_FORCE_HTTPS', false)) {
+        return true;
+    }
+
+    if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
+        return true;
+    }
+
+    if (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) {
+        return true;
+    }
+
+    return false;
+}
+
+function configure_session_security() {
+    if (PHP_SAPI === 'cli') {
+        return;
+    }
+
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.cookie_secure', app_is_https() ? '1' : '0');
+
+    $params = session_get_cookie_params();
+    session_set_cookie_params([
+        'lifetime' => $params['lifetime'] ?? 0,
+        'path' => $params['path'] ?? '/',
+        'domain' => $params['domain'] ?? '',
+        'secure' => app_is_https(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function send_security_headers() {
+    if (headers_sent()) {
+        return;
+    }
+
+    header("X-Frame-Options: DENY");
+    header("X-Content-Type-Options: nosniff");
+    header("Referrer-Policy: same-origin");
+    header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+
+    if (app_is_https()) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
+function storage_path($relative) {
+    $base = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR;
+    return $base . ltrim($relative, DIRECTORY_SEPARATOR);
+}
+
+function ensure_directory($path) {
+    if (!is_dir($path)) {
+        mkdir($path, 0775, true);
+    }
+}
+
+function security_log($event, array $context = [], $level = 'info') {
+    $dir = storage_path('storage/logs');
+    ensure_directory($dir);
+
+    $line = json_encode([
+        'ts' => date('c'),
+        'level' => $level,
+        'event' => $event,
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        'user_id' => $_SESSION['usuario_id'] ?? null,
+        'context' => $context
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    file_put_contents($dir . DIRECTORY_SEPARATOR . 'security.log', $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+}
+
+function rate_limit_storage_path($key) {
+    return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'recetario_login_' . sha1($key) . '.json';
+}
+
+function rate_limit_db_table_exists() {
+    static $exists = null;
+
+    if ($exists !== null) {
+        return $exists;
+    }
+
+    try {
+        $db = Database::conectar();
+        $table = 'security_rate_limits';
+        $res = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($table) . "'");
+        $exists = $res && $res->num_rows > 0;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
+}
+
+function rate_limit_check_db($key, $maxAttempts, $windowSeconds) {
+    $db = Database::conectar();
+    $keyHash = hash('sha256', $key);
+    $now = time();
+    $windowStart = $now - $windowSeconds;
+
+    $stmt = $db->prepare("SELECT attempts, window_started_at FROM security_rate_limits WHERE rate_key = ?");
+    $stmt->bind_param("s", $keyHash);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+
+    if (!$row) {
+        $stmt = $db->prepare("INSERT INTO security_rate_limits (rate_key, attempts, window_started_at, updated_at) VALUES (?, 0, ?, NOW())");
+        $stmt->bind_param("si", $keyHash, $now);
+        $stmt->execute();
+        return [true, 0, 0];
+    }
+
+    $attempts = (int)$row['attempts'];
+    $startedAt = (int)$row['window_started_at'];
+
+    if ($startedAt < $windowStart) {
+        $stmt = $db->prepare("UPDATE security_rate_limits SET attempts = 0, window_started_at = ?, updated_at = NOW() WHERE rate_key = ?");
+        $stmt->bind_param("is", $now, $keyHash);
+        $stmt->execute();
+        return [true, 0, 0];
+    }
+
+    if ($attempts >= $maxAttempts) {
+        return [false, $attempts, max(0, $windowSeconds - ($now - $startedAt))];
+    }
+
+    return [true, $attempts, 0];
+}
+
+function rate_limit_register_failure_db($key, $windowSeconds) {
+    $db = Database::conectar();
+    $keyHash = hash('sha256', $key);
+    $now = time();
+    $windowStart = $now - $windowSeconds;
+
+    $stmt = $db->prepare("SELECT attempts, window_started_at FROM security_rate_limits WHERE rate_key = ?");
+    $stmt->bind_param("s", $keyHash);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+
+    if (!$row) {
+        $stmt = $db->prepare("INSERT INTO security_rate_limits (rate_key, attempts, window_started_at, updated_at) VALUES (?, 1, ?, NOW())");
+        $stmt->bind_param("si", $keyHash, $now);
+        return $stmt->execute();
+    }
+
+    $attempts = (int)$row['attempts'];
+    $startedAt = (int)$row['window_started_at'];
+    if ($startedAt < $windowStart) {
+        $attempts = 0;
+        $startedAt = $now;
+    }
+
+    $attempts++;
+    $stmt = $db->prepare("UPDATE security_rate_limits SET attempts = ?, window_started_at = ?, updated_at = NOW() WHERE rate_key = ?");
+    $stmt->bind_param("iis", $attempts, $startedAt, $keyHash);
+    return $stmt->execute();
+}
+
+function rate_limit_clear_db($key) {
+    $db = Database::conectar();
+    $keyHash = hash('sha256', $key);
+    $stmt = $db->prepare("DELETE FROM security_rate_limits WHERE rate_key = ?");
+    $stmt->bind_param("s", $keyHash);
+    return $stmt->execute();
+}
 
 function csrf_token() {
     if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -40,11 +228,11 @@ function require_csrf_token($token) {
     }
 }
 
-function rate_limit_storage_path($key) {
-    return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'recetario_login_' . sha1($key) . '.json';
-}
-
 function rate_limit_check($key, $maxAttempts = 5, $windowSeconds = 900) {
+    if (rate_limit_db_table_exists()) {
+        return rate_limit_check_db($key, $maxAttempts, $windowSeconds);
+    }
+
     $path = rate_limit_storage_path($key);
 
     if (!file_exists($path)) {
@@ -72,6 +260,10 @@ function rate_limit_check($key, $maxAttempts = 5, $windowSeconds = 900) {
 }
 
 function rate_limit_register_failure($key, $windowSeconds = 900) {
+    if (rate_limit_db_table_exists()) {
+        return rate_limit_register_failure_db($key, $windowSeconds);
+    }
+
     $path = rate_limit_storage_path($key);
     $data = ['attempts' => []];
 
@@ -92,10 +284,88 @@ function rate_limit_register_failure($key, $windowSeconds = 900) {
 }
 
 function rate_limit_clear($key) {
+    if (rate_limit_db_table_exists()) {
+        rate_limit_clear_db($key);
+        return;
+    }
+
     $path = rate_limit_storage_path($key);
     if (file_exists($path)) {
         @unlink($path);
     }
+}
+
+function base32_encode_string($data) {
+    $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $binary = '';
+    $bytes = unpack('C*', $data);
+    foreach ($bytes as $byte) {
+        $binary .= str_pad(decbin($byte), 8, '0', STR_PAD_LEFT);
+    }
+
+    $chunks = str_split($binary, 5);
+    $output = '';
+    foreach ($chunks as $chunk) {
+        $chunk = str_pad($chunk, 5, '0', STR_PAD_RIGHT);
+        $output .= $alphabet[bindec($chunk)];
+    }
+
+    return $output;
+}
+
+function base32_decode_string($input) {
+    $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $input = strtoupper(preg_replace('/[^A-Z2-7]/', '', $input));
+    $binary = '';
+
+    foreach (str_split($input) as $char) {
+        $pos = strpos($alphabet, $char);
+        if ($pos === false) {
+            continue;
+        }
+        $binary .= str_pad(decbin($pos), 5, '0', STR_PAD_LEFT);
+    }
+
+    $bytes = str_split($binary, 8);
+    $output = '';
+    foreach ($bytes as $byte) {
+        if (strlen($byte) === 8) {
+            $output .= chr(bindec($byte));
+        }
+    }
+
+    return $output;
+}
+
+function generate_totp_secret($bytes = 20) {
+    return base32_encode_string(random_bytes($bytes));
+}
+
+function totp_code($secret, $timeSlice = null, $digits = 6, $period = 30) {
+    $timeSlice = $timeSlice ?? floor(time() / $period);
+    $secretKey = base32_decode_string($secret);
+    $time = pack('N*', 0) . pack('N*', $timeSlice);
+    $hash = hash_hmac('sha1', $time, $secretKey, true);
+    $offset = ord(substr($hash, -1)) & 0x0F;
+    $binary = (
+        ((ord($hash[$offset]) & 0x7F) << 24) |
+        ((ord($hash[$offset + 1]) & 0xFF) << 16) |
+        ((ord($hash[$offset + 2]) & 0xFF) << 8) |
+        (ord($hash[$offset + 3]) & 0xFF)
+    );
+    $otp = $binary % (10 ** $digits);
+    return str_pad((string)$otp, $digits, '0', STR_PAD_LEFT);
+}
+
+function verify_totp_code($secret, $code, $window = 1, $digits = 6, $period = 30) {
+    $code = preg_replace('/\s+/', '', (string)$code);
+    $slice = floor(time() / $period);
+    for ($i = -$window; $i <= $window; $i++) {
+        if (hash_equals(totp_code($secret, $slice + $i, $digits, $period), $code)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function admin_email() {
@@ -107,10 +377,88 @@ function is_admin_user($user = null) {
         return false;
     }
 
+    $role = strtolower((string)($user['rol'] ?? $user['role'] ?? $user['usuario_rol'] ?? ''));
+    if ($role === 'admin') {
+        return true;
+    }
+
     $adminEmail = admin_email();
-    if ($adminEmail === '') {
+    return $adminEmail !== '' && strtolower($user['email'] ?? '') === $adminEmail;
+}
+
+function password_reset_storage_path() {
+    return storage_path('storage/password_resets.json');
+}
+
+function store_password_reset_token($email, $tokenHash, $expiresAt) {
+    $path = password_reset_storage_path();
+    ensure_directory(dirname($path));
+
+    $data = [];
+    if (file_exists($path)) {
+        $decoded = json_decode(file_get_contents($path), true);
+        if (is_array($decoded)) {
+            $data = $decoded;
+        }
+    }
+
+    $data[] = [
+        'email' => strtolower($email),
+        'token_hash' => $tokenHash,
+        'expires_at' => $expiresAt,
+        'used_at' => null
+    ];
+
+    file_put_contents($path, json_encode($data), LOCK_EX);
+    return true;
+}
+
+function find_password_reset_entry($token) {
+    $path = password_reset_storage_path();
+    if (!file_exists($path)) {
+        return null;
+    }
+
+    $decoded = json_decode(file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    $tokenHash = hash('sha256', $token);
+    foreach ($decoded as $entry) {
+        if (($entry['token_hash'] ?? '') === $tokenHash && empty($entry['used_at']) && (int)($entry['expires_at'] ?? 0) >= time()) {
+            return $entry;
+        }
+    }
+
+    return null;
+}
+
+function consume_password_reset_token($token) {
+    $path = password_reset_storage_path();
+    if (!file_exists($path)) {
         return false;
     }
 
-    return strtolower($user['email'] ?? '') === $adminEmail;
+    $decoded = json_decode(file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        return false;
+    }
+
+    $tokenHash = hash('sha256', $token);
+    $changed = false;
+    foreach ($decoded as &$entry) {
+        if (($entry['token_hash'] ?? '') === $tokenHash && empty($entry['used_at']) && (int)($entry['expires_at'] ?? 0) >= time()) {
+            $entry['used_at'] = time();
+            $changed = true;
+            break;
+        }
+    }
+    unset($entry);
+
+    if ($changed) {
+        file_put_contents($path, json_encode($decoded), LOCK_EX);
+    }
+
+    return $changed;
 }
