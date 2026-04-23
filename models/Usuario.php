@@ -46,6 +46,34 @@ class Usuario {
         return $stmt->get_result()->num_rows > 0;
     }
 
+    public function obtenerPorId($id) {
+        $stmt = $this->db->prepare("SELECT id, nombre, email, password FROM usuarios WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    public function existeEmailExceptoId($email, $id) {
+        $stmt = $this->db->prepare("SELECT id FROM usuarios WHERE email = ? AND id != ?");
+        $stmt->bind_param("si", $email, $id);
+        $stmt->execute();
+        return $stmt->get_result()->num_rows > 0;
+    }
+
+    public function actualizarPerfil($id, $nombre, $email) {
+        $sql = "UPDATE usuarios SET nombre = ?, email = ? WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ssi", $nombre, $email, $id);
+        return $stmt->execute();
+    }
+
+    public function cambiarPassword($id, $password) {
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $this->db->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
+        $stmt->bind_param("si", $passwordHash, $id);
+        return $stmt->execute();
+    }
+
     // Comprobar si es favorito
     public function esFavorito($usuario_id, $receta_id) {
         $sql = "SELECT * FROM favoritos WHERE usuario_id = ? AND receta_id = ?";

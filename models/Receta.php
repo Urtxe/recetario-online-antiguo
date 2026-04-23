@@ -236,6 +236,15 @@ class Receta {
         return $res['total'];
     }
 
+    public function contarRecetasPorUsuario($usuario_id) {
+        $sql = "SELECT COUNT(*) as total FROM recetas WHERE usuario_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $usuario_id);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res['total'];
+    }
+
     // Orígenes en uso
     public function obtenerOrigenesEnUso() {
         $sql = "SELECT DISTINCT origen FROM recetas WHERE origen IS NOT NULL AND origen != '' ORDER BY origen ASC";
