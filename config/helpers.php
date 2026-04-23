@@ -39,3 +39,61 @@ function require_csrf_token($token) {
         exit('Token CSRF inválido');
     }
 }
+
+function rate_limit_storage_path($key) {
+    return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'recetario_login_' . sha1($key) . '.json';
+}
+
+function rate_limit_check($key, $maxAttempts = 5, $windowSeconds = 900) {
+    $path = rate_limit_storage_path($key);
+
+    if (!file_exists($path)) {
+        return [true, 0, 0];
+    }
+
+    $raw = file_get_contents($path);
+    $data = json_decode($raw, true);
+
+    if (!is_array($data)) {
+        return [true, 0, 0];
+    }
+
+    $attempts = array_values(array_filter($data['attempts'] ?? [], function ($timestamp) use ($windowSeconds) {
+        return is_int($timestamp) && $timestamp >= (time() - $windowSeconds);
+    }));
+
+    if (count($attempts) >= $maxAttempts) {
+        $retryAfter = $windowSeconds - (time() - min($attempts));
+        return [false, count($attempts), max(0, $retryAfter)];
+    }
+
+    file_put_contents($path, json_encode(['attempts' => $attempts]), LOCK_EX);
+    return [true, count($attempts), 0];
+}
+
+function rate_limit_register_failure($key, $windowSeconds = 900) {
+    $path = rate_limit_storage_path($key);
+    $data = ['attempts' => []];
+
+    if (file_exists($path)) {
+        $raw = file_get_contents($path);
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            $data = $decoded;
+        }
+    }
+
+    $data['attempts'] = array_values(array_filter($data['attempts'] ?? [], function ($timestamp) use ($windowSeconds) {
+        return is_int($timestamp) && $timestamp >= (time() - $windowSeconds);
+    }));
+    $data['attempts'][] = time();
+
+    file_put_contents($path, json_encode($data), LOCK_EX);
+}
+
+function rate_limit_clear($key) {
+    $path = rate_limit_storage_path($key);
+    if (file_exists($path)) {
+        @unlink($path);
+    }
+}

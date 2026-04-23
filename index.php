@@ -4,7 +4,7 @@ session_start();
 require_once 'config/helpers.php';
 
 $rutas_permitidas = [
-    'auth' => ['login', 'registro', 'logout'],
+    'auth' => ['login', 'registro', 'logout', 'perfil', 'actualizarPerfil'],
     'receta' => ['index', 'ver', 'crear', 'guardar', 'editar', 'actualizar', 'borrar', 'misFavoritos', 'favorito']
 ];
 
