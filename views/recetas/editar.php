@@ -58,13 +58,13 @@
 
         <label style="margin-top: 20px; display:block;">Ingredientes:</label>
         <div id="ingredient-list">
-            <?php while($ing = $ingredientes->fetch_assoc()): ?>
+            <?php foreach ($ingredientes as $ing): ?>
             <div class="ingredient-item">
                 <input type="text" name="ingrediente_nombre[]" value="<?php echo htmlspecialchars($ing['nombre']); ?>" required>
                 <input type="text" name="ingrediente_cantidad[]" value="<?php echo htmlspecialchars($ing['cantidad']); ?>" required>
                 <button type="button" class="btn-remove" onclick="this.parentElement.remove()">X</button>
             </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </div>
         
         <button type="button" onclick="addIngredient()" class="btn-add-ingredient-style">Añadir Ingrediente</button>

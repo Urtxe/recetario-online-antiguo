@@ -245,6 +245,23 @@ class Receta {
         return $res['total'];
     }
 
+    public function obtenerTodasParaModeracion($limit, $offset) {
+        $sql = "SELECT r.*, u.nombre AS nombre_autor
+                FROM recetas r
+                JOIN usuarios u ON r.usuario_id = u.id
+                ORDER BY r.id DESC LIMIT ? OFFSET ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ii", $limit, $offset);
+        $stmt->execute();
+        return $stmt->get_result();
+    }
+
+    public function contarTodasParaModeracion() {
+        $sql = "SELECT COUNT(*) as total FROM recetas";
+        $res = $this->db->query($sql)->fetch_assoc();
+        return $res['total'];
+    }
+
     // Orígenes en uso
     public function obtenerOrigenesEnUso() {
         $sql = "SELECT DISTINCT origen FROM recetas WHERE origen IS NOT NULL AND origen != '' ORDER BY origen ASC";

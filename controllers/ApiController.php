@@ -1,8 +1,14 @@
 <?php
-require_once 'models/Receta.php';
+require_once 'services/RecipeService.php';
 require_once 'config/helpers.php';
 
 class ApiController {
+    private $recipeService;
+
+    public function __construct($recipeService = null) {
+        $this->recipeService = $recipeService ?: new RecipeService();
+    }
+
     private function verificarSesion() {
         if (!isset($_SESSION['usuario_id'])) {
             http_response_code(401);
@@ -32,13 +38,8 @@ class ApiController {
         $filtros = $this->obtenerFiltros();
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $por_pagina = 12;
-        $offset = ($pagina - 1) * $por_pagina;
-
-        $modelo = new Receta();
-        $recetas = $modelo->listarConFiltros($filtros, $por_pagina, $offset);
-        $total_recetas = $modelo->contarTotal($filtros);
-        $total_paginas = (int)ceil($total_recetas / $por_pagina);
-        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
+        $listado = $this->recipeService->listData($filtros, $pagina, $por_pagina, $_SESSION['usuario_id']);
+        $recetas = $listado['recetas'];
         $resultados = [];
 
         while ($receta = $recetas->fetch_assoc()) {
@@ -52,7 +53,7 @@ class ApiController {
                 'imagen_url' => $receta['imagen_url'],
                 'nombre_autor' => $receta['nombre_autor'],
                 'usuario_id' => (int)$receta['usuario_id'],
-                'es_favorito' => isset($favoritos_ids[(int)$receta['id']])
+                'es_favorito' => isset($listado['favoritos_ids'][(int)$receta['id']])
             ];
         }
 
@@ -61,8 +62,8 @@ class ApiController {
             'data' => [
                 'recetas' => $resultados,
                 'pagina' => $pagina,
-                'total_paginas' => $total_paginas,
-                'total_recetas' => (int)$total_recetas,
+                'total_paginas' => $listado['total_paginas'],
+                'total_recetas' => (int)$listado['total_recetas'],
                 'usuario_id_actual' => (int)$_SESSION['usuario_id']
             ]
         ]);
@@ -81,43 +82,14 @@ class ApiController {
             exit();
         }
 
-        $modelo = new Receta();
-        $receta = $modelo->obtenerPorId($id);
-
-        if (!$receta) {
+        $detalle = $this->recipeService->detailData($id, $_SESSION['usuario_id']);
+        if (!$detalle['success']) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Receta no encontrada']);
+            echo json_encode(['success' => false, 'message' => $detalle['error']]);
             exit();
         }
 
-        $ingredientes = [];
-        $resultadoIngredientes = $modelo->obtenerIngredientes($id);
-        while ($ing = $resultadoIngredientes->fetch_assoc()) {
-            $ingredientes[] = [
-                'nombre' => $ing['nombre'],
-                'cantidad' => $ing['cantidad']
-            ];
-        }
-
-        $favoritos_ids = array_fill_keys($modelo->obtenerIdsFavoritos($_SESSION['usuario_id']), true);
-
-        echo json_encode([
-            'success' => true,
-            'data' => [
-                'id' => (int)$receta['id'],
-                'titulo' => $receta['titulo'],
-                'duracion' => (int)$receta['duracion'],
-                'dificultad' => $receta['dificultad'],
-                'origen' => $receta['origen'],
-                'tipo' => $receta['tipo'],
-                'imagen_url' => $receta['imagen_url'],
-                'nombre_autor' => $receta['nombre_autor'],
-                'usuario_id' => (int)$receta['usuario_id'],
-                'preparacion' => $receta['preparacion'],
-                'ingredientes' => $ingredientes,
-                'es_favorito' => isset($favoritos_ids[$id])
-            ]
-        ]);
+        echo json_encode(['success' => true, 'data' => $detalle['receta'] + ['ingredientes' => $detalle['ingredientes'], 'es_favorito' => $detalle['es_favorito']]]);
         exit();
     }
 }

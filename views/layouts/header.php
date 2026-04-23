@@ -12,6 +12,9 @@
         <div class="user-info">
             ¡Hola, <strong><?php echo htmlspecialchars($_SESSION['usuario_nombre'] ?? 'Invitado'); ?></strong>!<br>
             <a href="index.php?controller=auth&action=perfil">Mi perfil</a> |
+            <?php if (is_admin_user($_SESSION ?? [])): ?>
+                <a href="index.php?controller=admin&action=dashboard">Admin</a> |
+            <?php endif; ?>
             <form action="index.php?controller=auth&action=logout" method="post" style="display:inline;">
                 <?php echo csrf_field(); ?>
                 <button type="submit" style="background:none;border:none;color:inherit;padding:0;cursor:pointer;text-decoration:underline;">

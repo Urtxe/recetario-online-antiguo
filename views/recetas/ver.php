@@ -26,12 +26,12 @@
     <div class="recipe-section">
         <h3>Ingredientes</h3>
         <ul class="ingredient-list">
-            <?php while($ing = $ingredientes->fetch_assoc()): ?>
+            <?php foreach ($ingredientes as $ing): ?>
                 <li>
                     <span class="ing-name"><?php echo htmlspecialchars($ing['nombre']); ?></span>
                     <span class="ing-qty"><?php echo htmlspecialchars($ing['cantidad']); ?></span>
                 </li>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </ul>
     </div>
 
@@ -53,12 +53,6 @@
             </form>
         </div>
     <?php endif; ?>
-
-    <?php 
-    // Verificar si es favorito
-    $uModel = new Usuario();
-    $esFav = $uModel->esFavorito($_SESSION['usuario_id'], $receta['id']);
-    ?>
 
     <div class="btn-fav-container">
         <button id="btn-favorito" class="btn-fav-ver" data-id="<?php echo $receta['id']; ?>">

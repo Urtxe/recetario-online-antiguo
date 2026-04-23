@@ -97,3 +97,20 @@ function rate_limit_clear($key) {
         @unlink($path);
     }
 }
+
+function admin_email() {
+    return strtolower(trim(getenv('ADMIN_EMAIL') ?: ''));
+}
+
+function is_admin_user($user = null) {
+    if (!$user) {
+        return false;
+    }
+
+    $adminEmail = admin_email();
+    if ($adminEmail === '') {
+        return false;
+    }
+
+    return strtolower($user['email'] ?? '') === $adminEmail;
+}
