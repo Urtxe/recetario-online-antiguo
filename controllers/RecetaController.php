@@ -4,12 +4,113 @@ require_once 'models/Usuario.php';
 require_once 'config/helpers.php';
 
 class RecetaController {
+
+    private $dificultadesPermitidas = ['facil', 'medio', 'dificil'];
+    private $origenesPermitidos = [
+        'euskalduna', 'española', 'italiana', 'francesa', 'europea',
+        'nordica', 'africa', 'asia', 'latina', 'caribeña',
+        'norteamericana', 'fusión', 'europa del este', 'escandinava'
+    ];
+    private $tiposPermitidos = [
+        'desayuno', 'aperitivo', 'entrante', 'principal',
+        'postre', 'merienda', 'guarnición', 'salsa'
+    ];
     
     // Validar autenticación
     private function verificarSesion() {
         if (!isset($_SESSION['usuario_id'])) {
             header('Location: index.php?controller=auth&action=login');
             exit();
+        }
+    }
+
+    private function validarRecetaDesdePost() {
+        $titulo = trim($_POST['titulo'] ?? '');
+        $preparacion = trim($_POST['preparacion'] ?? '');
+        $duracion = (int)($_POST['duracion'] ?? 0);
+        $dificultad = $_POST['dificultad'] ?? '';
+        $origen = $_POST['origen'] ?? '';
+        $tipo = $_POST['tipo'] ?? '';
+
+        if ($titulo === '' || $preparacion === '' || $duracion <= 0) {
+            return [false, 'Completa todos los campos obligatorios', null];
+        }
+
+        if (!in_array($dificultad, $this->dificultadesPermitidas, true)) {
+            return [false, 'La dificultad seleccionada no es válida', null];
+        }
+
+        if (!in_array($origen, $this->origenesPermitidos, true)) {
+            return [false, 'El origen seleccionado no es válido', null];
+        }
+
+        if (!in_array($tipo, $this->tiposPermitidos, true)) {
+            return [false, 'El tipo seleccionado no es válido', null];
+        }
+
+        return [true, '', [
+            'titulo' => $titulo,
+            'preparacion' => $preparacion,
+            'duracion' => $duracion,
+            'dificultad' => $dificultad,
+            'origen' => $origen,
+            'tipo' => $tipo
+        ]];
+    }
+
+    private function procesarImagenSubida($archivo) {
+        if (!isset($archivo) || $archivo['error'] === UPLOAD_ERR_NO_FILE) {
+            return [true, '', null];
+        }
+
+        if ($archivo['error'] !== UPLOAD_ERR_OK) {
+            return [false, '', 'Error al subir la imagen'];
+        }
+
+        $maximoBytes = 2 * 1024 * 1024;
+        if ($archivo['size'] > $maximoBytes) {
+            return [false, '', 'La imagen supera el tamaño máximo permitido'];
+        }
+
+        $mimePermitidos = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif'
+        ];
+
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeReal = $finfo->file($archivo['tmp_name']);
+        } elseif (function_exists('mime_content_type')) {
+            $mimeReal = mime_content_type($archivo['tmp_name']);
+        } else {
+            $mimeReal = '';
+        }
+
+        if (!isset($mimePermitidos[$mimeReal])) {
+            return [false, '', 'Formato de imagen no válido'];
+        }
+
+        if (!is_dir('public/uploads')) {
+            mkdir('public/uploads', 0775, true);
+        }
+
+        $nombreImagen = bin2hex(random_bytes(16)) . '.' . $mimePermitidos[$mimeReal];
+        $rutaDestino = 'public/uploads/' . $nombreImagen;
+
+        if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
+            return [false, '', 'No se pudo guardar la imagen'];
+        }
+
+        return [true, $nombreImagen, null];
+    }
+
+    private function eliminarImagenSiExiste($nombreImagen) {
+        if (!empty($nombreImagen)) {
+            $ruta = 'public/uploads/' . $nombreImagen;
+            if (file_exists($ruta)) {
+                unlink($ruta);
+            }
         }
     }
 
@@ -95,54 +196,43 @@ class RecetaController {
         
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             require_csrf_token($_POST['_csrf_token'] ?? '');
-            // Validar campos obligatorios
-            $titulo = trim($_POST['titulo'] ?? '');
-            $preparacion = trim($_POST['preparacion'] ?? '');
-            $duracion = (int)($_POST['duracion'] ?? 0);
-
-            if (empty($titulo) || empty($preparacion) || $duracion <= 0) {
-                $_SESSION['mensaje_flash'] = 'Completa todos los campos obligatorios';
+            list($valido, $mensajeError, $datosBase) = $this->validarRecetaDesdePost();
+            if (!$valido) {
+                $_SESSION['mensaje_flash'] = $mensajeError;
                 $_SESSION['tipo_flash'] = 'error';
                 header('Location: index.php?controller=receta&action=crear');
                 exit();
             }
 
             // Procesar imagen
-            $imagen = '';
-            if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
-                $permitidos = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-                if (in_array($_FILES['imagen']['type'], $permitidos)) {
-                    $imagen = time() . '_' . $_FILES['imagen']['name'];
-                    move_uploaded_file($_FILES['imagen']['tmp_name'], 'public/uploads/' . $imagen);
-                } else {
-                    $_SESSION['mensaje_flash'] = 'Formato de imagen no válido';
-                    $_SESSION['tipo_flash'] = 'error';
-                    header('Location: index.php?controller=receta&action=crear');
-                    exit();
-                }
+            list($imagenOk, $imagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
+            if (!$imagenOk) {
+                $_SESSION['mensaje_flash'] = $errorImagen;
+                $_SESSION['tipo_flash'] = 'error';
+                header('Location: index.php?controller=receta&action=crear');
+                exit();
             }
 
-            // Guardar en BD
-            $datos = [
-                'titulo' => $titulo,
-                'duracion' => $duracion,
-                'dificultad' => $_POST['dificultad'],
-                'origen' => $_POST['origen'],
-                'tipo' => $_POST['tipo'],
-                'preparacion' => $preparacion,
-                'imagen' => $imagen
-            ];
+            $datosBase['imagen'] = $imagen;
 
             $modelo = new Receta();
-            $id_receta = $modelo->crear($datos, $_SESSION['usuario_id']);
+            $modelo->iniciarTransaccion();
 
-            if ($id_receta) {
-                $modelo->guardarIngredientes($id_receta, $_POST['ingrediente_nombre'], $_POST['ingrediente_cantidad']);
+            try {
+                $id_receta = $modelo->crear($datosBase, $_SESSION['usuario_id']);
+
+                if (!$id_receta || !$modelo->guardarIngredientes($id_receta, $_POST['ingrediente_nombre'] ?? [], $_POST['ingrediente_cantidad'] ?? [])) {
+                    throw new Exception('Error al guardar');
+                }
+
+                $modelo->confirmarTransaccion();
                 $_SESSION['mensaje_flash'] = '¡Receta guardada!';
                 $_SESSION['tipo_flash'] = 'success';
                 header('Location: index.php');
                 exit();
-            } else {
+            } catch (Exception $e) {
+                $modelo->revertirTransaccion();
+                $this->eliminarImagenSiExiste($imagen);
                 $_SESSION['mensaje_flash'] = 'Error al guardar';
                 $_SESSION['tipo_flash'] = 'error';
                 header('Location: index.php?controller=receta&action=crear');
@@ -164,38 +254,52 @@ class RecetaController {
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             require_csrf_token($_POST['_csrf_token'] ?? '');
-            // Gestionar imagen
-            $nombre_imagen = $receta['imagen_url'];
-            if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
-                $permitidos = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-                if (in_array($_FILES['imagen']['type'], $permitidos)) {
-                    $nombre_imagen = time() . '_' . $_FILES['imagen']['name'];
-                    move_uploaded_file($_FILES['imagen']['tmp_name'], 'public/uploads/' . $nombre_imagen);
-                } else {
-                    $_SESSION['mensaje_flash'] = 'Formato de imagen no válido';
-                    $_SESSION['tipo_flash'] = 'error';
-                    header('Location: index.php?controller=receta&action=editar&id=' . $id);
-                    exit();
-                }
+            list($valido, $mensajeError, $datosBase) = $this->validarRecetaDesdePost();
+            if (!$valido) {
+                $_SESSION['mensaje_flash'] = $mensajeError;
+                $_SESSION['tipo_flash'] = 'error';
+                header('Location: index.php?controller=receta&action=editar&id=' . $id);
+                exit();
             }
 
-            $datos = [
-                'titulo'      => trim($_POST['titulo']),
-                'duracion'    => (int)$_POST['duracion'],
-                'dificultad'  => $_POST['dificultad'],
-                'origen'      => $_POST['origen'],
-                'tipo'        => $_POST['tipo'],
-                'preparacion' => trim($_POST['preparacion']),
-                'imagen'      => $nombre_imagen
-            ];
+            list($imagenOk, $nombre_imagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
+            if (!$imagenOk) {
+                $_SESSION['mensaje_flash'] = $errorImagen;
+                $_SESSION['tipo_flash'] = 'error';
+                header('Location: index.php?controller=receta&action=editar&id=' . $id);
+                exit();
+            }
 
-            if ($modelo->actualizar($id, $datos)) {
-                $modelo->borrarIngredientes($id);
-                $modelo->guardarIngredientes($id, $_POST['ingrediente_nombre'], $_POST['ingrediente_cantidad']);
+            $imagenAnterior = $receta['imagen_url'];
+            $datosBase['imagen'] = $nombre_imagen ?: $imagenAnterior;
+
+            $modelo->iniciarTransaccion();
+
+            try {
+                if (!$modelo->actualizar($id, $datosBase)) {
+                    throw new Exception('Error al actualizar la receta');
+                }
+
+                if (!$modelo->borrarIngredientes($id)) {
+                    throw new Exception('Error al limpiar ingredientes');
+                }
+
+                if (!$modelo->guardarIngredientes($id, $_POST['ingrediente_nombre'] ?? [], $_POST['ingrediente_cantidad'] ?? [])) {
+                    throw new Exception('Error al guardar ingredientes');
+                }
+
+                $modelo->confirmarTransaccion();
+                if (!empty($nombre_imagen) && $nombre_imagen !== $imagenAnterior) {
+                    $this->eliminarImagenSiExiste($imagenAnterior);
+                }
                 $_SESSION['mensaje_flash'] = '¡Receta actualizada!';
                 $_SESSION['tipo_flash'] = 'success';
-            } else {
-                $_SESSION['mensaje_flash'] = 'Error al actualizar la receta';
+            } catch (Exception $e) {
+                $modelo->revertirTransaccion();
+                if (!empty($nombre_imagen)) {
+                    $this->eliminarImagenSiExiste($nombre_imagen);
+                }
+                $_SESSION['mensaje_flash'] = $e->getMessage();
                 $_SESSION['tipo_flash'] = 'error';
             }
             header('Location: index.php?controller=receta&action=ver&id=' . $id);
@@ -231,7 +335,18 @@ class RecetaController {
         $receta = $modelo->obtenerPorId($id);
 
         if ($receta && $receta['usuario_id'] == $_SESSION['usuario_id']) {
-            $modelo->borrar($id);
+            $modelo->iniciarTransaccion();
+            try {
+                if (!$modelo->borrar($id)) {
+                    throw new Exception('No se pudo borrar la receta');
+                }
+                $modelo->confirmarTransaccion();
+                $this->eliminarImagenSiExiste($receta['imagen_url'] ?? '');
+            } catch (Exception $e) {
+                $modelo->revertirTransaccion();
+                $_SESSION['mensaje_flash'] = 'Error al borrar la receta';
+                $_SESSION['tipo_flash'] = 'error';
+            }
         }
         header('Location: index.php');
     }

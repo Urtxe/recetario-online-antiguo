@@ -8,6 +8,18 @@ class Receta {
         $this->db = Database::conectar();
     }
 
+    public function iniciarTransaccion() {
+        $this->db->begin_transaction();
+    }
+
+    public function confirmarTransaccion() {
+        $this->db->commit();
+    }
+
+    public function revertirTransaccion() {
+        $this->db->rollback();
+    }
+
     // Listar con filtros y paginación
     public function listarConFiltros($filtros, $limit, $offset) {
         $sql = "SELECT recetas.*, usuarios.nombre AS nombre_autor 
@@ -140,13 +152,20 @@ class Receta {
     public function guardarIngredientes($receta_id, $nombres, $cantidades) {
         $sql = "INSERT INTO ingredientes (receta_id, nombre, cantidad) VALUES (?, ?, ?)";
         $stmt = $this->db->prepare($sql);
+        $guardado = true;
         
         for ($i = 0; $i < count($nombres); $i++) {
             if (!empty($nombres[$i])) {
-                $stmt->bind_param("iss", $receta_id, $nombres[$i], $cantidades[$i]);
-                $stmt->execute();
+                $cantidad = $cantidades[$i] ?? '';
+                $stmt->bind_param("iss", $receta_id, $nombres[$i], $cantidad);
+                if (!$stmt->execute()) {
+                    $guardado = false;
+                    break;
+                }
             }
         }
+
+        return $guardado;
     }
 
     // Actualizar receta
@@ -167,7 +186,7 @@ class Receta {
     public function borrarIngredientes($receta_id) {
         $stmt = $this->db->prepare("DELETE FROM ingredientes WHERE receta_id = ?");
         $stmt->bind_param("i", $receta_id);
-        $stmt->execute();
+        return $stmt->execute();
     }
 
     // Eliminar receta
