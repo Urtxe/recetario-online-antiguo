@@ -168,10 +168,7 @@ class AuthController extends BaseController {
         require_csrf_token($_POST['_csrf_token'] ?? '');
 
         $usuario = (new Usuario())->obtenerPorIdConSeguridad($_SESSION['usuario_id']);
-        if (!$usuario || !is_admin_user($usuario)) {
-            http_response_code(403);
-            exit('Acceso denegado');
-        }
+        $this->requireAdminUser($usuario);
 
         $secret = $usuario['two_factor_secret'] ?? '';
         if (empty($secret)) {

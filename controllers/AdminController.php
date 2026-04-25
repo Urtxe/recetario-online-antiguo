@@ -18,10 +18,7 @@ class AdminController extends BaseController {
         $this->requireLogin();
 
         $usuario = $this->usuarioModel->obtenerPorIdConSeguridad($_SESSION['usuario_id']);
-        if (!$usuario || !is_admin_user($usuario)) {
-            http_response_code(403);
-            exit('Acceso denegado');
-        }
+        $this->requireAdminUser($usuario);
     }
 
     public function dashboard() {
