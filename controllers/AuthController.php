@@ -1,8 +1,9 @@
 <?php
 require_once 'services/AuthService.php';
 require_once 'config/helpers.php';
+require_once 'controllers/BaseController.php';
 
-class AuthController {
+class AuthController extends BaseController {
     private $authService;
 
     public function __construct($authService = null) {
@@ -23,8 +24,7 @@ class AuthController {
                 $_SESSION['usuario_nombre'] = $resultado['user']['nombre'];
                 $_SESSION['usuario_email'] = $resultado['user']['email'];
                 $_SESSION['usuario_rol'] = $resultado['user']['rol'] ?? 'usuario';
-                header('Location: index.php');
-                exit();
+                $this->redirect('index.php');
             } elseif (!empty($resultado['requires_2fa'])) {
                 $_SESSION['pending_2fa_user'] = $resultado['user'];
                 $error_2fa = $resultado['error'];
@@ -51,8 +51,7 @@ class AuthController {
                 $_SESSION['usuario_nombre'] = $resultado['user']['nombre'];
                 $_SESSION['usuario_email'] = $resultado['user']['email'];
                 $_SESSION['usuario_rol'] = $resultado['user']['rol'] ?? 'usuario';
-                header('Location: index.php');
-                exit();
+                $this->redirect('index.php');
             } else {
                 $error_registro = $resultado['error'];
             }
@@ -61,10 +60,7 @@ class AuthController {
     }
 
     public function logout() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit('Método no permitido');
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
         $_SESSION = [];
@@ -78,18 +74,14 @@ class AuthController {
     }
 
     public function verificar2fa() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
 
         $user = $_SESSION['pending_2fa_user'] ?? null;
         $code = trim($_POST['codigo_2fa'] ?? '');
         if (!$user) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
+            $this->redirect('index.php?controller=auth&action=login');
         }
 
         $resultado = $this->authService->verifyAdminTwoFactor($user, $code);
@@ -105,22 +97,17 @@ class AuthController {
         $_SESSION['usuario_email'] = $user['email'];
         $_SESSION['usuario_rol'] = $user['rol'] ?? 'usuario';
         unset($_SESSION['pending_2fa_user']);
-        header('Location: index.php');
-        exit();
+        $this->redirect('index.php');
     }
 
     public function perfil() {
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requireLogin();
 
         $resultado = $this->authService->getProfileSummary($_SESSION['usuario_id']);
         if (!$resultado['success']) {
             $_SESSION['mensaje_flash'] = $resultado['error'];
             $_SESSION['tipo_flash'] = 'error';
-            header('Location: index.php');
-            exit();
+            $this->redirect('index.php');
         }
 
         $usuario = $resultado['usuario'];
@@ -135,14 +122,10 @@ class AuthController {
     }
 
     public function actualizarPerfil() {
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requireLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
@@ -165,27 +148,21 @@ class AuthController {
         if (!$resultado['success']) {
             $_SESSION['mensaje_flash'] = $resultado['error'];
             $_SESSION['tipo_flash'] = 'error';
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         $_SESSION['usuario_nombre'] = $resultado['usuario']['nombre'];
         $_SESSION['usuario_email'] = $resultado['usuario']['email'];
         $_SESSION['mensaje_flash'] = 'Perfil actualizado correctamente';
         $_SESSION['tipo_flash'] = 'success';
-        header('Location: index.php?controller=auth&action=perfil');
-        exit();
+        $this->redirect('index.php?controller=auth&action=perfil');
     }
 
     public function activar2fa() {
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requireLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
@@ -212,15 +189,13 @@ class AuthController {
                 $_SESSION['mensaje_flash'] = 'No se pudo preparar el 2FA';
                 $_SESSION['tipo_flash'] = 'error';
             }
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         if (!verify_totp_code($secret, $codigo)) {
             $_SESSION['mensaje_flash'] = 'Código 2FA inválido';
             $_SESSION['tipo_flash'] = 'error';
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         $modelo = new Usuario();
@@ -233,19 +208,14 @@ class AuthController {
             $_SESSION['tipo_flash'] = 'error';
         }
 
-        header('Location: index.php?controller=auth&action=perfil');
-        exit();
+        $this->redirect('index.php?controller=auth&action=perfil');
     }
 
     public function desactivar2fa() {
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requireLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
@@ -254,8 +224,7 @@ class AuthController {
         if (!$usuario || empty($usuario['password']) || !password_verify($passwordActual, $usuario['password'])) {
             $_SESSION['mensaje_flash'] = 'La contraseña actual no es correcta';
             $_SESSION['tipo_flash'] = 'error';
-            header('Location: index.php?controller=auth&action=perfil');
-            exit();
+            $this->redirect('index.php?controller=auth&action=perfil');
         }
 
         $modelo = new Usuario();
@@ -267,15 +236,11 @@ class AuthController {
             $_SESSION['mensaje_flash'] = 'No se pudo desactivar 2FA';
             $_SESSION['tipo_flash'] = 'error';
         }
-        header('Location: index.php?controller=auth&action=perfil');
-        exit();
+        $this->redirect('index.php?controller=auth&action=perfil');
     }
 
     public function solicitarRecuperacion() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
         $email = trim($_POST['email'] ?? '');
@@ -288,15 +253,11 @@ class AuthController {
         }
 
         $_SESSION['tipo_flash'] = 'success';
-        header('Location: index.php?controller=auth&action=login');
-        exit();
+        $this->redirect('index.php?controller=auth&action=login');
     }
 
     public function resetearPassword() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
         $token = trim($_POST['reset_token'] ?? '');
@@ -307,13 +268,11 @@ class AuthController {
         if (!$resultado['success']) {
             $_SESSION['mensaje_flash'] = $resultado['error'];
             $_SESSION['tipo_flash'] = 'error';
-            header('Location: index.php?controller=auth&action=login');
-            exit();
+            $this->redirect('index.php?controller=auth&action=login');
         }
 
         $_SESSION['mensaje_flash'] = 'Contraseña actualizada. Ya puedes iniciar sesión.';
         $_SESSION['tipo_flash'] = 'success';
-        header('Location: index.php?controller=auth&action=login');
-        exit();
+        $this->redirect('index.php?controller=auth&action=login');
     }
 }

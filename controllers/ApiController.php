@@ -1,8 +1,9 @@
 <?php
 require_once 'services/RecipeService.php';
 require_once 'config/helpers.php';
+require_once 'controllers/BaseController.php';
 
-class ApiController {
+class ApiController extends BaseController {
     private $recipeService;
 
     public function __construct($recipeService = null) {
@@ -11,10 +12,7 @@ class ApiController {
 
     private function verificarSesion() {
         if (!isset($_SESSION['usuario_id'])) {
-            http_response_code(401);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'message' => 'No autorizado']);
-            exit();
+            $this->jsonResponse(['success' => false, 'message' => 'No autorizado'], 401);
         }
     }
 
@@ -32,8 +30,6 @@ class ApiController {
 
     public function recetas() {
         $this->verificarSesion();
-
-        header('Content-Type: application/json; charset=utf-8');
 
         $filtros = $this->obtenerFiltros();
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
@@ -57,7 +53,7 @@ class ApiController {
             ];
         }
 
-        echo json_encode([
+        $this->jsonResponse([
             'success' => true,
             'data' => [
                 'recetas' => $resultados,
@@ -67,29 +63,21 @@ class ApiController {
                 'usuario_id_actual' => (int)$_SESSION['usuario_id']
             ]
         ]);
-        exit();
     }
 
     public function receta() {
         $this->verificarSesion();
 
-        header('Content-Type: application/json; charset=utf-8');
-
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         if ($id <= 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'ID de receta no válido']);
-            exit();
+            $this->jsonResponse(['success' => false, 'message' => 'ID de receta no válido'], 400);
         }
 
         $detalle = $this->recipeService->detailData($id, $_SESSION['usuario_id']);
         if (!$detalle['success']) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'message' => $detalle['error']]);
-            exit();
+            $this->jsonResponse(['success' => false, 'message' => $detalle['error']], 404);
         }
 
-        echo json_encode(['success' => true, 'data' => $detalle['receta'] + ['ingredientes' => $detalle['ingredientes'], 'es_favorito' => $detalle['es_favorito']]]);
-        exit();
+        $this->jsonResponse(['success' => true, 'data' => $detalle['receta'] + ['ingredientes' => $detalle['ingredientes'], 'es_favorito' => $detalle['es_favorito']]]);
     }
 }

@@ -3,8 +3,9 @@ require_once 'models/Receta.php';
 require_once 'models/Usuario.php';
 require_once 'services/RecipeService.php';
 require_once 'config/helpers.php';
+require_once 'controllers/BaseController.php';
 
-class AdminController {
+class AdminController extends BaseController {
     private $recipeService;
     private $usuarioModel;
 
@@ -14,10 +15,7 @@ class AdminController {
     }
 
     private function verificarAdmin() {
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requireLogin();
 
         $usuario = $this->usuarioModel->obtenerPorIdConSeguridad($_SESSION['usuario_id']);
         if (!$usuario || !is_admin_user($usuario)) {
@@ -48,10 +46,7 @@ class AdminController {
     public function borrarReceta($id) {
         $this->verificarAdmin();
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit('Método no permitido');
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
         $resultado = $this->recipeService->adminDeleteRecipe($id);
