@@ -11,6 +11,11 @@ function app_bool_env($key, $default = false) {
     return in_array($value, ['1', 'true', 'yes', 'on'], true);
 }
 
+function app_int_env($key, $default = 0) {
+    $value = app_env($key, (string)$default);
+    return is_numeric($value) ? (int)$value : (int)$default;
+}
+
 function app_is_https() {
     if (app_bool_env('APP_FORCE_HTTPS', false)) {
         return true;
