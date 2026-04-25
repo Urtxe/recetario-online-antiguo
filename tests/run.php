@@ -33,8 +33,9 @@ class FakeUsuarioRepo {
 
     public function __construct() {
         $this->users = [
-            1 => ['id' => 1, 'nombre' => 'Admin', 'email' => 'admin@example.com', 'password' => password_hash('secret', PASSWORD_DEFAULT)],
-            2 => ['id' => 2, 'nombre' => 'Mikel', 'email' => 'mikel@example.com', 'password' => password_hash('secret', PASSWORD_DEFAULT)],
+            1 => ['id' => 1, 'nombre' => 'Admin', 'email' => 'admin@example.com', 'password' => password_hash('secret', PASSWORD_DEFAULT), 'rol' => 'admin', 'two_factor_enabled' => 0, 'two_factor_secret' => null],
+            2 => ['id' => 2, 'nombre' => 'Mikel', 'email' => 'mikel@example.com', 'password' => password_hash('secret', PASSWORD_DEFAULT), 'rol' => 'usuario', 'two_factor_enabled' => 0, 'two_factor_secret' => null],
+            3 => ['id' => 3, 'nombre' => 'Admin 2FA', 'email' => 'admin-2fa@example.com', 'password' => password_hash('secret', PASSWORD_DEFAULT), 'rol' => 'admin', 'two_factor_enabled' => 1, 'two_factor_secret' => 'JBSWY3DPEHPK3PXP'],
         ];
     }
 
@@ -73,6 +74,15 @@ class FakeUsuarioRepo {
 
     public function obtenerPorIdConSeguridad($id) {
         return $this->obtenerPorId($id);
+    }
+
+    public function obtenerPorEmail($email) {
+        foreach ($this->users as $user) {
+            if ($user['email'] === $email) {
+                return $user;
+            }
+        }
+        return null;
     }
 
     public function existeEmailExceptoId($email, $id) {
@@ -260,6 +270,41 @@ $tests['login'] = function () {
     assert_true(str_contains($blocked['error'], 'Demasiados intentos'), 'El mensaje debe indicar bloqueo');
 };
 
+$tests['two_factor'] = function () {
+    $previousIp = $_SERVER['REMOTE_ADDR'] ?? null;
+    $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+    try {
+        $users = new FakeUsuarioRepo();
+        $recipes = new FakeRecetaRepo();
+        $service = new AuthService($users, $recipes);
+        $user = $users->obtenerPorEmail('admin-2fa@example.com');
+        $code = totp_code($user['two_factor_secret']);
+
+        rate_limit_clear('2fa|admin-2fa@example.com|127.0.0.1');
+        $login = $service->login('admin-2fa@example.com', 'secret', '127.0.0.1');
+        assert_true(!empty($login['requires_2fa']), 'El admin con 2FA debe pedir código');
+
+        $valid = $service->verifyAdminTwoFactor($user, $code);
+        assert_true($valid['success'], 'El código 2FA válido debe funcionar');
+
+        rate_limit_clear('2fa|admin-2fa@example.com|127.0.0.1');
+        for ($i = 0; $i < 8; $i++) {
+            $service->verifyAdminTwoFactor($user, '000000');
+        }
+        $blocked = $service->verifyAdminTwoFactor($user, '000000');
+
+        assert_true(!$blocked['success'], 'El 2FA debe bloquear tras varios fallos');
+        assert_true(str_contains($blocked['error'], 'Demasiados intentos 2FA'), 'El mensaje debe indicar bloqueo 2FA');
+    } finally {
+        if ($previousIp === null) {
+            unset($_SERVER['REMOTE_ADDR']);
+        } else {
+            $_SERVER['REMOTE_ADDR'] = $previousIp;
+        }
+    }
+};
+
 $tests['profile'] = function () {
     $users = new FakeUsuarioRepo();
     $recipes = new FakeRecetaRepo();
@@ -269,6 +314,9 @@ $tests['profile'] = function () {
     assert_true($result['success'], 'El perfil debería actualizarse');
     assert_equals('Mikel Urtxegi', $result['usuario']['nombre'], 'El nombre debe cambiar');
     assert_equals('mikel+new@example.com', $result['usuario']['email'], 'El email debe cambiar');
+
+    $duplicateEmail = $service->updateProfile(2, 'Mikel Urtxegi', 'admin@example.com');
+    assert_true(!$duplicateEmail['success'], 'No se debe permitir un email duplicado');
 };
 
 $tests['favorites'] = function () {
