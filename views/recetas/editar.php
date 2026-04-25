@@ -50,7 +50,7 @@
 
         <label>Foto actual:</label>
         <?php if (!empty($receta['imagen_url'])): ?>
-            <img src="public/uploads/<?php echo htmlspecialchars($receta['imagen_url']); ?>" style="width:100px; display:block; margin-bottom:10px; border-radius:4px;">
+            <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" style="width:100px; display:block; margin-bottom:10px; border-radius:4px;">
         <?php endif; ?>
         
         <label>Cambiar Foto (opcional):</label>

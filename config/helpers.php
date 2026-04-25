@@ -71,13 +71,40 @@ function storage_path($relative) {
 }
 
 function upload_storage_path($relative = '') {
-    $baseDir = app_env('UPLOAD_DIR', 'public/uploads');
+    $baseDir = app_env('UPLOAD_DIR', 'storage/uploads');
     $base = storage_path($baseDir);
     if ($relative === '') {
         return $base;
     }
 
     return rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($relative, DIRECTORY_SEPARATOR);
+}
+
+function upload_legacy_public_path($relative = '') {
+    $base = storage_path('public/uploads');
+    if ($relative === '') {
+        return $base;
+    }
+
+    return rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($relative, DIRECTORY_SEPARATOR);
+}
+
+function upload_delivery_mode() {
+    return strtolower(trim(app_env('UPLOAD_DELIVERY_MODE', 'controller')));
+}
+
+function recipe_image_url($filename) {
+    if (empty($filename)) {
+        return '';
+    }
+
+    $safeName = rawurlencode(basename((string)$filename));
+    if (upload_delivery_mode() === 'static') {
+        $prefix = trim(app_env('UPLOAD_URL_PREFIX', 'public/uploads'), '/');
+        return $prefix . '/' . $safeName;
+    }
+
+    return 'index.php?controller=file&action=imagen&name=' . $safeName;
 }
 
 function ensure_directory($path) {

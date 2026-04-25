@@ -7,6 +7,7 @@ send_security_headers();
 
 $rutas_permitidas = [
     'auth' => ['login', 'registro', 'logout', 'perfil', 'actualizarPerfil', 'verificar2fa', 'activar2fa', 'desactivar2fa', 'solicitarRecuperacion', 'resetearPassword'],
+    'file' => ['imagen'],
     'api' => ['recetas', 'receta'],
     'admin' => ['dashboard', 'borrarReceta'],
     'receta' => ['index', 'ver', 'crear', 'guardar', 'editar', 'actualizar', 'borrar', 'misFavoritos', 'favorito']
