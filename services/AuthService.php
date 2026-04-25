@@ -188,11 +188,22 @@ class AuthService {
             return ['success' => false, 'error' => 'El usuario no tiene 2FA configurado'];
         }
 
+        $limiterKey = '2fa|' . strtolower($user['email'] ?? '') . '|' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        list($puedeIntentar, $intentos, $retryAfter) = rate_limit_check($limiterKey, 8, 900);
+        if (!$puedeIntentar) {
+            return [
+                'success' => false,
+                'error' => 'Demasiados intentos 2FA. Prueba de nuevo en ' . max(1, (int)ceil($retryAfter / 60)) . ' minuto(s).'
+            ];
+        }
+
         if (!verify_totp_code($user['two_factor_secret'], $code)) {
+            rate_limit_register_failure($limiterKey);
             security_log('admin_2fa_failed', ['email' => $user['email'] ?? null]);
             return ['success' => false, 'error' => 'Código 2FA inválido'];
         }
 
+        rate_limit_clear($limiterKey);
         security_log('admin_2fa_success', ['email' => $user['email'] ?? null]);
         return ['success' => true];
     }

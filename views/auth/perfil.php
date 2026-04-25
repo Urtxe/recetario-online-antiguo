@@ -31,14 +31,14 @@
         <button type="submit" style="margin-top: 20px;">Guardar cambios</button>
     </form>
 
-    <?php if (is_admin_user($usuario) && isset($usuario['two_factor_secret'])): ?>
+    <?php if (is_admin_user($usuario) && isset($usuario['two_factor_enabled'])): ?>
         <div style="margin-top: 30px; padding: 15px; background: #f8f8f8; border-radius: 8px;">
             <h3>Seguridad extra para admin</h3>
             <p><strong>2FA:</strong> <?php echo !empty($usuario['two_factor_enabled']) ? 'Activado' : 'Desactivado'; ?></p>
 
-            <?php if (!empty($usuario['two_factor_secret'])): ?>
-                <p><strong>Secreto:</strong> <code><?php echo htmlspecialchars($usuario['two_factor_secret']); ?></code></p>
-                <p>Introduce este secreto en tu aplicación de autenticación y luego valida el código.</p>
+            <?php if (!empty($twoFactorSetupSecret)): ?>
+                <p><strong>Secreto de configuración:</strong> <code><?php echo htmlspecialchars($twoFactorSetupSecret); ?></code></p>
+                <p>Guárdalo ahora en tu aplicación de autenticación. Este secreto solo se muestra una vez.</p>
             <?php endif; ?>
 
             <form action="index.php?controller=auth&action=activar2fa" method="POST" style="margin-top: 15px;">
@@ -50,11 +50,13 @@
 
             <form action="index.php?controller=auth&action=activar2fa" method="POST" style="margin-top: 10px;">
                 <?php echo csrf_field(); ?>
-                <button type="submit">Generar secreto 2FA</button>
+                <button type="submit">Generar nuevo secreto 2FA</button>
             </form>
 
             <form action="index.php?controller=auth&action=desactivar2fa" method="POST" style="margin-top: 10px;">
                 <?php echo csrf_field(); ?>
+                <label for="password_actual_2fa">Contraseña actual</label>
+                <input type="password" id="password_actual_2fa" name="password_actual" autocomplete="current-password" required>
                 <button type="submit">Desactivar 2FA</button>
             </form>
         </div>
