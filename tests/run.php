@@ -465,6 +465,17 @@ $tests['admin_helper'] = function () {
     putenv('ADMIN_EMAIL=' . ($previous !== false ? $previous : ''));
 };
 
+$tests['image_helper'] = function () {
+    $previousMode = getenv('UPLOAD_DELIVERY_MODE');
+    putenv('UPLOAD_DELIVERY_MODE=controller');
+
+    $url = recipe_image_url('tarta queso.jpg');
+    assert_true(str_contains($url, 'controller=file&action=imagen'), 'La URL de imagen debe usar el controlador');
+    assert_true(str_contains($url, 'tarta%20queso.jpg'), 'La URL de imagen debe codificar el nombre');
+
+    putenv('UPLOAD_DELIVERY_MODE=' . ($previousMode !== false ? $previousMode : ''));
+};
+
 $passed = 0;
 $failed = 0;
 $failures = [];

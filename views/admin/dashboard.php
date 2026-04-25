@@ -12,7 +12,7 @@
                 <div class="receta-item">
                     <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado">
                         <?php if (!empty($receta['imagen_url'])): ?>
-                            <img src="public/uploads/<?php echo htmlspecialchars($receta['imagen_url']); ?>" class="receta-miniatura">
+                            <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" class="receta-miniatura">
                         <?php else: ?>
                             <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>
                         <?php endif; ?>

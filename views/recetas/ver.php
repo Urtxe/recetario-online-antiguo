@@ -1,7 +1,7 @@
 <div class="content-card recipe-card">
     
     <?php if (!empty($receta['imagen_url'])): ?>
-<img src="public/uploads/<?php echo htmlspecialchars($receta['imagen_url']); ?>" 
+<img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" 
      id="img-zoom" 
      class="recipe-main-image clickable" 
      alt="Click para ampliar">

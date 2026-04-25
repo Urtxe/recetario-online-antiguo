@@ -73,12 +73,19 @@ class ImageStorageService {
             return false;
         }
 
-        $path = upload_storage_path($filename);
-        if (file_exists($path)) {
-            return unlink($path);
+        $paths = [
+            upload_storage_path($filename),
+            upload_legacy_public_path($filename)
+        ];
+
+        $deleted = false;
+        foreach ($paths as $path) {
+            if (file_exists($path) && unlink($path)) {
+                $deleted = true;
+            }
         }
 
-        return false;
+        return $deleted;
     }
 
     private function detectMimeType($path) {

@@ -13,12 +13,12 @@
                     </button>
                 </div>
 
-                <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado" alt="<?php echo htmlspecialchars($receta['titulo']); ?>">
-                    <?php if (!empty($receta['imagen_url'])): ?>
-                        <img src="public/uploads/<?php echo htmlspecialchars($receta['imagen_url']); ?>" class="receta-miniatura">
-                    <?php else: ?>
-                        <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>                    
-                    <?php endif; ?>
+                    <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado" alt="<?php echo htmlspecialchars($receta['titulo']); ?>">
+                        <?php if (!empty($receta['imagen_url'])): ?>
+                        <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" class="receta-miniatura">
+                        <?php else: ?>
+                            <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>                    
+                        <?php endif; ?>
                     <div style="padding: 15px; flex-grow: 1;">
                         <h3 class="receta-titulo"><?php echo htmlspecialchars($receta['titulo']); ?></h3>
                         <p style="font-size: 0.85rem; color: #666; margin: 8px 0;">
