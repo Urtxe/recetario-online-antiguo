@@ -122,6 +122,23 @@ SET @sql := (
             FROM information_schema.statistics
             WHERE table_schema = @db_name
               AND table_name = 'recetas'
+              AND index_name = 'idx_recetas_busqueda'
+        ),
+        'SELECT 1',
+        'CREATE FULLTEXT INDEX idx_recetas_busqueda ON recetas (titulo, preparacion)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'recetas'
               AND index_name = 'idx_recetas_usuario_id'
         ),
         'SELECT 1',

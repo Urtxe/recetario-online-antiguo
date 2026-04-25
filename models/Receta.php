@@ -6,6 +6,7 @@ class Receta {
     private $cacheOrigenes = null;
     private $cacheTipos = null;
     private $cacheUsuarios = null;
+    private $cacheFullTextRecetas = null;
 
     public function __construct() {
         $this->db = Database::conectar();
@@ -73,13 +74,16 @@ class Receta {
         $types = "";
 
         if (!empty($filtros['buscar'])) {
-            $where[] = "recetas.titulo LIKE ?";
-            $types .= "s";
-            $params[] = "%" . $filtros['buscar'] . "%";
+            $where[] = $this->condicionBusquedaTextoCompleto($filtros['buscar']);
+            $busquedaParams = $this->parametrosBusquedaTextoCompleto($filtros['buscar']);
+            foreach ($busquedaParams as $param) {
+                $params[] = $param;
+                $types .= "s";
+            }
         }
 
         if (!empty($filtros['ingredientes'])) {
-            $where[] = "EXISTS (SELECT 1 FROM ingredientes WHERE ingredientes.receta_id = recetas.id AND ingredientes.nombre LIKE ?)";
+            $where[] = $this->condicionBusquedaIngredientes($filtros['ingredientes']);
             $types .= "s";
             $params[] = "%" . $filtros['ingredientes'] . "%";
         }
@@ -118,6 +122,95 @@ class Receta {
         }
 
         return [$where, $params, $types];
+    }
+
+    private function puedeUsarBusquedaTextoCompleto($texto) {
+        $texto = trim((string)$texto);
+        if ($texto === '') {
+            return false;
+        }
+
+        return $this->tieneIndiceTextoCompleto('recetas', 'idx_recetas_busqueda')
+            && (strlen($texto) >= 3);
+    }
+
+    private function condicionBusquedaTextoCompleto($texto) {
+        $texto = trim((string)$texto);
+        if ($texto === '') {
+            return '1=1';
+        }
+
+        if ($this->puedeUsarBusquedaTextoCompleto($texto)) {
+            return "("
+                . "MATCH(recetas.titulo, recetas.preparacion) AGAINST (? IN BOOLEAN MODE)"
+                . " OR EXISTS (SELECT 1 FROM ingredientes WHERE ingredientes.receta_id = recetas.id AND ingredientes.nombre LIKE ?)"
+                . " OR recetas.titulo LIKE ?"
+                . " OR recetas.preparacion LIKE ?"
+                . " OR usuarios.nombre LIKE ?"
+                . ")";
+        }
+
+        return "("
+            . "recetas.titulo LIKE ?"
+            . " OR recetas.preparacion LIKE ?"
+            . " OR EXISTS (SELECT 1 FROM ingredientes WHERE ingredientes.receta_id = recetas.id AND ingredientes.nombre LIKE ?)"
+            . " OR usuarios.nombre LIKE ?"
+            . ")";
+    }
+
+    private function parametrosBusquedaTextoCompleto($texto) {
+        $texto = trim((string)$texto);
+        if ($texto === '') {
+            return [];
+        }
+
+        $like = '%' . $texto . '%';
+        if ($this->puedeUsarBusquedaTextoCompleto($texto)) {
+            $boolean = $this->textoABooleanoFulltext($texto);
+            return [$boolean, $like, $like, $like, $like];
+        }
+
+        return [$like, $like, $like, $like];
+    }
+
+    private function textoABooleanoFulltext($texto) {
+        $palabras = preg_split('/\s+/', trim((string)$texto));
+        $terminos = [];
+        foreach ($palabras as $palabra) {
+            $palabra = preg_replace('/[^\pL\pN]+/u', '', $palabra);
+            if (mb_strlen($palabra) >= 2) {
+                $terminos[] = '+' . $palabra . '*';
+            }
+        }
+
+        return implode(' ', $terminos);
+    }
+
+    private function condicionBusquedaIngredientes($texto) {
+        return "EXISTS (SELECT 1 FROM ingredientes WHERE ingredientes.receta_id = recetas.id AND ingredientes.nombre LIKE ?)";
+    }
+
+    private function tieneIndiceTextoCompleto($tabla, $indexName) {
+        if ($tabla === 'recetas' && $this->cacheFullTextRecetas !== null) {
+            return $this->cacheFullTextRecetas;
+        }
+
+        $sql = "SELECT 1 FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name = ?
+                  AND index_name = ?
+                  AND index_type = 'FULLTEXT'
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ss", $tabla, $indexName);
+        $stmt->execute();
+        $exists = $stmt->get_result()->num_rows > 0;
+
+        if ($tabla === 'recetas') {
+            $this->cacheFullTextRecetas = $exists;
+        }
+
+        return $exists;
     }
 
     // Obtener por ID

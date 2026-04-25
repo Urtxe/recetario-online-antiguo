@@ -132,6 +132,7 @@ class FakeUsuarioRepo {
 
 class FakeRecetaRepo {
     public $recipes;
+    public $ingredients;
 
     public function __construct() {
         $this->recipes = [
@@ -146,6 +147,28 @@ class FakeRecetaRepo {
                 'imagen_url' => 'tortilla.jpg',
                 'usuario_id' => 2,
                 'nombre_autor' => 'Mikel'
+            ],
+            11 => [
+                'id' => 11,
+                'titulo' => 'Crema de calabaza',
+                'duracion' => 35,
+                'dificultad' => 'medio',
+                'origen' => 'española',
+                'tipo' => 'entrante',
+                'preparacion' => 'Triturar la calabaza con caldo y nata',
+                'imagen_url' => 'crema.jpg',
+                'usuario_id' => 1,
+                'nombre_autor' => 'Admin'
+            ]
+        ];
+        $this->ingredients = [
+            10 => [
+                ['nombre' => 'Huevo', 'cantidad' => '2'],
+                ['nombre' => 'Patata', 'cantidad' => '3']
+            ],
+            11 => [
+                ['nombre' => 'Calabaza', 'cantidad' => '500g'],
+                ['nombre' => 'Nata', 'cantidad' => '100ml']
             ]
         ];
     }
@@ -155,11 +178,19 @@ class FakeRecetaRepo {
     public function revertirTransaccion() {}
 
     public function listarConFiltros($filtros, $limit, $offset) {
-        return new FakeResult(array_values($this->recipes));
+        $filtered = array_values(array_filter($this->recipes, function ($recipe) use ($filtros) {
+            return $this->matchesFilters($recipe, $filtros);
+        }));
+
+        return new FakeResult(array_slice($filtered, $offset, $limit));
     }
 
     public function contarTotal($filtros) {
-        return count($this->recipes);
+        $filtered = array_filter($this->recipes, function ($recipe) use ($filtros) {
+            return $this->matchesFilters($recipe, $filtros);
+        });
+
+        return count($filtered);
     }
 
     public function obtenerIdsFavoritos($usuario_id) {
@@ -171,10 +202,7 @@ class FakeRecetaRepo {
     }
 
     public function obtenerIngredientes($id) {
-        return new FakeResult([
-            ['nombre' => 'Huevo', 'cantidad' => '2'],
-            ['nombre' => 'Patata', 'cantidad' => '3']
-        ]);
+        return new FakeResult($this->ingredients[$id] ?? []);
     }
 
     public function crear($datos, $usuario_id) {
@@ -234,6 +262,71 @@ class FakeRecetaRepo {
 
     public function contarRecetasPorUsuario($usuario_id) {
         return count($this->recipes);
+    }
+
+    private function matchesFilters($recipe, $filtros) {
+        if (!empty($filtros['buscar'])) {
+            $search = mb_strtolower($filtros['buscar']);
+            $hayCoincidencia = str_contains(mb_strtolower($recipe['titulo']), $search)
+                || str_contains(mb_strtolower($recipe['preparacion']), $search)
+                || str_contains(mb_strtolower($recipe['nombre_autor']), $search)
+                || $this->ingredientMatch($recipe['id'], $search);
+            if (!$hayCoincidencia) {
+                return false;
+            }
+        }
+
+        if (!empty($filtros['ingredientes'])) {
+            if (!$this->ingredientMatch($recipe['id'], mb_strtolower($filtros['ingredientes']))) {
+                return false;
+            }
+        }
+
+        if (!empty($filtros['origen']) && $recipe['origen'] !== $filtros['origen']) {
+            return false;
+        }
+
+        if (!empty($filtros['dificultad']) && $recipe['dificultad'] !== $filtros['dificultad']) {
+            return false;
+        }
+
+        if (!empty($filtros['tipo']) && $recipe['tipo'] !== $filtros['tipo']) {
+            return false;
+        }
+
+        if (!empty($filtros['usuario']) && (int)$recipe['usuario_id'] !== (int)$filtros['usuario']) {
+            return false;
+        }
+
+        if (!empty($filtros['duracion'])) {
+            $duracion = (int)$recipe['duracion'];
+            switch ($filtros['duracion']) {
+                case '0-30':
+                    if ($duracion > 30) return false;
+                    break;
+                case '30-60':
+                    if ($duracion <= 30 || $duracion > 60) return false;
+                    break;
+                case '60-120':
+                    if ($duracion <= 60 || $duracion > 120) return false;
+                    break;
+                case '120+':
+                    if ($duracion <= 120) return false;
+                    break;
+            }
+        }
+
+        return true;
+    }
+
+    private function ingredientMatch($recipeId, $search) {
+        foreach ($this->ingredients[$recipeId] ?? [] as $ingredient) {
+            if (str_contains(mb_strtolower($ingredient['nombre']), $search)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -346,6 +439,21 @@ $tests['api'] = function () {
     assert_true($detail['success'], 'El detalle debe existir');
     assert_equals(2, count($detail['ingredientes']), 'Debe devolver ingredientes');
     assert_true($detail['es_favorito'], 'Debe marcar favorito en detalle');
+};
+
+$tests['search'] = function () {
+    $users = new FakeUsuarioRepo();
+    $recipes = new FakeRecetaRepo();
+    $service = new RecipeService($recipes, $users);
+
+    $searchByTitle = $service->listData(['buscar' => 'tortilla'], 1, 12, 2);
+    assert_equals(1, $searchByTitle['total_recetas'], 'La búsqueda por título debe filtrar resultados');
+
+    $searchByIngredient = $service->listData(['buscar' => 'calabaza'], 1, 12, 2);
+    assert_equals(1, $searchByIngredient['total_recetas'], 'La búsqueda por ingrediente debe filtrar resultados');
+
+    $searchByAuthor = $service->listData(['buscar' => 'admin'], 1, 12, 2);
+    assert_equals(1, $searchByAuthor['total_recetas'], 'La búsqueda por autor debe filtrar resultados');
 };
 
 $tests['admin_helper'] = function () {
