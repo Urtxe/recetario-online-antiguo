@@ -2,16 +2,19 @@
 require_once 'models/Receta.php';
 require_once 'models/Usuario.php';
 require_once 'services/RecipeService.php';
+require_once 'services/MaintenanceService.php';
 require_once 'config/helpers.php';
 require_once 'controllers/BaseController.php';
 
 class AdminController extends BaseController {
     private $recipeService;
     private $usuarioModel;
+    private $maintenanceService;
 
     public function __construct($recipeService = null, $usuarioModel = null) {
         $this->recipeService = $recipeService ?: new RecipeService();
         $this->usuarioModel = $usuarioModel ?: new Usuario();
+        $this->maintenanceService = new MaintenanceService();
     }
 
     private function verificarAdmin() {
@@ -23,6 +26,7 @@ class AdminController extends BaseController {
 
     public function dashboard() {
         $this->verificarAdmin();
+        $this->maintenanceService->runHousekeeping();
 
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $por_pagina = 15;
