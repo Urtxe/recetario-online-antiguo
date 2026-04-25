@@ -144,6 +144,11 @@ body:has(.contenedor-auth) {
     background-color: var(--color-primary-hover);
 }
 
+.panel-2fa,
+.panel-recuperacion {
+    margin-top: 20px;
+}
+
 /* ========== FOOTER DE AUTH ========== */
 
 .footer {

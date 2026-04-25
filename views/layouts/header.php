@@ -11,16 +11,16 @@
     <header class="main-header">
         <div class="user-info">
             ¡Hola, <strong><?php echo htmlspecialchars($_SESSION['usuario_nombre'] ?? 'Invitado'); ?></strong>!<br>
-            <a href="index.php?controller=auth&action=perfil">Mi perfil</a> |
-            <?php if (is_admin_user($_SESSION ?? [])): ?>
-                <a href="index.php?controller=admin&action=dashboard">Admin</a> |
-            <?php endif; ?>
-            <form action="index.php?controller=auth&action=logout" method="post" style="display:inline;">
-                <?php echo csrf_field(); ?>
-                <button type="submit" style="background:none;border:none;color:inherit;padding:0;cursor:pointer;text-decoration:underline;">
-                    Cerrar Sesión
-                </button>
-            </form>
+            <span class="user-info-links">
+                <a href="index.php?controller=auth&action=perfil">Mi perfil</a> |
+                <?php if (is_admin_user($_SESSION ?? [])): ?>
+                    <a href="index.php?controller=admin&action=dashboard">Admin</a> |
+                <?php endif; ?>
+                <form action="index.php?controller=auth&action=logout" method="post" class="inline-form">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" class="button-link">Cerrar Sesión</button>
+                </form>
+            </span>
         </div>
         <nav class="main-nav">
             <h1>RECETARIO ONLINE</h1>
@@ -37,13 +37,6 @@
         <?php echo htmlspecialchars($_SESSION['mensaje_flash'], ENT_QUOTES, 'UTF-8'); ?>
     </div>
     <?php unset($_SESSION['mensaje_flash'], $_SESSION['tipo_flash']); ?>
-    <script>
-        // Desvanecer mensaje tras 3 segundos
-        setTimeout(() => {
-            const msg = document.getElementById('flash-message');
-            if(msg) msg.style.display = 'none';
-        }, 3000);
-    </script>
-    <?php endif; ?>
+<?php endif; ?>
 
     <main>

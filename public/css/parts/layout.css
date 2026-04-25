@@ -46,6 +46,14 @@ main {
     margin-bottom: 0;
 }
 
+.user-info-links {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .user-info strong {
     color: var(--color-primary-dark);
 }

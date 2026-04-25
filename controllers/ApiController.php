@@ -33,7 +33,7 @@ class ApiController extends BaseController {
         $this->verificarSesion();
 
         $filtros = $this->obtenerFiltros();
-        $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $pagina = max(1, isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1);
         $por_pagina = 12;
         $listado = $this->recipeService->listData($filtros, $pagina, $por_pagina, $_SESSION['usuario_id']);
         $recetas = $listado['recetas'];

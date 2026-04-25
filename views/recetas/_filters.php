@@ -65,5 +65,5 @@
     <small class="filter-help">También encuentra coincidencias en ingredientes si el texto está en la receta.</small>
 
     <input type="text" name="ingredientes" id="input_ingredientes" placeholder="Buscar por ingrediente (ej: pollo, sal...)" value="<?php echo htmlspecialchars($filtros['ingredientes'] ?? ''); ?>">
-    <button type="submit" style="display:none;">Buscar</button>
+    <button type="submit" hidden>Buscar</button>
 </form>

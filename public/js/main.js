@@ -2,6 +2,28 @@
 document.addEventListener("DOMContentLoaded", function() {
     const csrfMeta = document.querySelector('meta[name="csrf-token"]');
     const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+    const flashMessage = document.getElementById('flash-message');
+
+    if (flashMessage) {
+        window.setTimeout(() => {
+            flashMessage.classList.add('is-hiding');
+            window.setTimeout(() => {
+                flashMessage.remove();
+            }, 250);
+        }, 3000);
+    }
+
+    document.addEventListener('submit', function(event) {
+        const form = event.target.closest('form[data-confirm]');
+        if (!form) {
+            return;
+        }
+
+        const message = form.getAttribute('data-confirm') || '¿Seguro?';
+        if (!window.confirm(message)) {
+            event.preventDefault();
+        }
+    });
 
     // Alternar favoritos con delegación de eventos:
     // funciona aunque el grid se reemplace por AJAX o cambie de página.
@@ -51,11 +73,11 @@ document.addEventListener("DOMContentLoaded", function() {
     const btnCerrar = document.querySelector('.close-modal');
 
     if (imgClickable) {
-        imgClickable.onclick = function() {
+        imgClickable.addEventListener('click', function() {
             modalImg.src = this.src;
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-        };
+        });
     }
 
     // Zoom con rueda
@@ -128,8 +150,23 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     };
 
-    if (btnCerrar) btnCerrar.onclick = cerrarModal;
-    if (modal) modal.onclick = (e) => { if (e.target === modal) cerrarModal(); };
+    if (btnCerrar) {
+        btnCerrar.addEventListener('click', cerrarModal);
+    }
+
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                cerrarModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal && modal.classList.contains('active')) {
+            cerrarModal();
+        }
+    });
 
     // Zoom táctil (pellizcar)
     let distInicial = -1;
