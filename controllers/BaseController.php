@@ -26,4 +26,11 @@ abstract class BaseController {
         echo json_encode($data);
         exit();
     }
+
+    protected function requireAdminUser($user) {
+        if (!$user || !is_admin_user($user)) {
+            http_response_code(403);
+            exit('Acceso denegado');
+        }
+    }
 }

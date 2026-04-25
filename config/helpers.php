@@ -70,6 +70,16 @@ function storage_path($relative) {
     return $base . ltrim($relative, DIRECTORY_SEPARATOR);
 }
 
+function upload_storage_path($relative = '') {
+    $baseDir = app_env('UPLOAD_DIR', 'public/uploads');
+    $base = storage_path($baseDir);
+    if ($relative === '') {
+        return $base;
+    }
+
+    return rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($relative, DIRECTORY_SEPARATOR);
+}
+
 function ensure_directory($path) {
     if (!is_dir($path)) {
         mkdir($path, 0775, true);

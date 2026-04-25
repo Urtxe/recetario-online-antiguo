@@ -1,11 +1,13 @@
 <?php
 require_once 'models/Receta.php';
 require_once 'services/RecipeService.php';
+require_once 'services/ImageStorageService.php';
 require_once 'config/helpers.php';
 require_once 'controllers/BaseController.php';
 
 class RecetaController extends BaseController {
     private $recipeService;
+    private $imageStorageService;
 
     private $dificultadesPermitidas = ['facil', 'medio', 'dificil'];
     private $origenesPermitidos = [
@@ -20,6 +22,7 @@ class RecetaController extends BaseController {
 
     public function __construct($recipeService = null) {
         $this->recipeService = $recipeService ?: new RecipeService();
+        $this->imageStorageService = new ImageStorageService();
     }
 
     private function verificarSesion() {
@@ -60,74 +63,8 @@ class RecetaController extends BaseController {
         ]];
     }
 
-    private function procesarImagenSubida($archivo) {
-        if (!isset($archivo) || $archivo['error'] === UPLOAD_ERR_NO_FILE) {
-            return [true, '', null];
-        }
-
-        if ($archivo['error'] !== UPLOAD_ERR_OK) {
-            security_log('upload_failed', ['reason' => 'upload_error', 'code' => $archivo['error']], 'warning');
-            return [false, '', 'Error al subir la imagen'];
-        }
-
-        $maximoBytes = 2 * 1024 * 1024;
-        if ($archivo['size'] > $maximoBytes) {
-            security_log('upload_failed', ['reason' => 'size_limit', 'size' => $archivo['size']], 'warning');
-            return [false, '', 'La imagen supera el tamaño máximo permitido'];
-        }
-
-        $mimePermitidos = [
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/gif' => 'gif'
-        ];
-
-        if (class_exists('finfo')) {
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mimeReal = $finfo->file($archivo['tmp_name']);
-        } elseif (function_exists('mime_content_type')) {
-            $mimeReal = mime_content_type($archivo['tmp_name']);
-        } else {
-            $mimeReal = '';
-        }
-
-        if (!isset($mimePermitidos[$mimeReal])) {
-            security_log('upload_failed', ['reason' => 'mime', 'mime' => $mimeReal], 'warning');
-            return [false, '', 'Formato de imagen no válido'];
-        }
-
-        $dimensions = @getimagesize($archivo['tmp_name']);
-        if ($dimensions === false) {
-            security_log('upload_failed', ['reason' => 'invalid_image'], 'warning');
-            return [false, '', 'La imagen no es válida'];
-        }
-
-        if ($dimensions[0] > 4096 || $dimensions[1] > 4096) {
-            security_log('upload_failed', ['reason' => 'dimensions', 'width' => $dimensions[0], 'height' => $dimensions[1]], 'warning');
-            return [false, '', 'La imagen supera las dimensiones permitidas'];
-        }
-
-        if (!is_dir('public/uploads')) {
-            mkdir('public/uploads', 0775, true);
-        }
-
-        $nombreImagen = bin2hex(random_bytes(16)) . '.' . $mimePermitidos[$mimeReal];
-        $rutaDestino = 'public/uploads/' . $nombreImagen;
-
-        if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
-            return [false, '', 'No se pudo guardar la imagen'];
-        }
-
-        return [true, $nombreImagen, null];
-    }
-
     private function eliminarImagenSiExiste($nombreImagen) {
-        if (!empty($nombreImagen)) {
-            $ruta = 'public/uploads/' . $nombreImagen;
-            if (file_exists($ruta)) {
-                unlink($ruta);
-            }
-        }
+        $this->imageStorageService->deleteImage($nombreImagen);
     }
 
     public function index() {
@@ -223,7 +160,7 @@ class RecetaController extends BaseController {
             exit();
         }
 
-        list($imagenOk, $imagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
+        list($imagenOk, $imagen, $errorImagen) = $this->imageStorageService->storeUploadedImage($_FILES['imagen'] ?? null);
         if (!$imagenOk) {
             $_SESSION['mensaje_flash'] = $errorImagen;
             $_SESSION['tipo_flash'] = 'error';
@@ -244,6 +181,7 @@ class RecetaController extends BaseController {
             exit();
         }
 
+        security_log('recipe_created', ['recipe_id' => (int)$resultado['id'], 'user_id' => (int)$_SESSION['usuario_id']], 'info');
         $_SESSION['mensaje_flash'] = '¡Receta guardada!';
         $_SESSION['tipo_flash'] = 'success';
         header('Location: index.php');
@@ -270,7 +208,7 @@ class RecetaController extends BaseController {
                 exit();
             }
 
-            list($imagenOk, $nombreImagen, $errorImagen) = $this->procesarImagenSubida($_FILES['imagen'] ?? null);
+            list($imagenOk, $nombreImagen, $errorImagen) = $this->imageStorageService->storeUploadedImage($_FILES['imagen'] ?? null);
             if (!$imagenOk) {
                 $_SESSION['mensaje_flash'] = $errorImagen;
                 $_SESSION['tipo_flash'] = 'error';
@@ -297,6 +235,7 @@ class RecetaController extends BaseController {
                 $this->eliminarImagenSiExiste($resultado['imagen_anterior'] ?? '');
             }
 
+            security_log('recipe_updated', ['recipe_id' => (int)$id, 'user_id' => (int)$_SESSION['usuario_id']], 'info');
             $_SESSION['mensaje_flash'] = '¡Receta actualizada!';
             $_SESSION['tipo_flash'] = 'success';
             header('Location: index.php?controller=receta&action=ver&id=' . $id);
