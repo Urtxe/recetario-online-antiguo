@@ -67,7 +67,8 @@
             ?>
         </select>
 
-        <input type="text" name="buscar" id="input_buscar" placeholder="Buscar por nombre..." value="<?php echo htmlspecialchars($filtros['buscar']); ?>">
+        <input type="text" name="buscar" id="input_buscar" placeholder="Busca por receta, preparación o autor..." value="<?php echo htmlspecialchars($filtros['buscar']); ?>">
+        <small style="display:block; margin-top:-6px; color:#666;">También encuentra coincidencias en ingredientes si el texto está en la receta.</small>
 
         <input type="text" name="ingredientes" id="input_ingredientes" placeholder="Buscar por ingrediente (ej: pollo, sal...)" 
                 value="<?php echo htmlspecialchars($filtros['ingredientes'] ?? ''); ?>">
