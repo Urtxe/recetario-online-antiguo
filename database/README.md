@@ -24,4 +24,5 @@ SOURCE database/security.sql;
 - El script tambien crea indices para `recetas` e `ingredientes` que ayudan a los listados, filtros y favoritos cuando la base crece.
 - La busqueda principal usa `FULLTEXT` sobre `recetas.titulo` y `recetas.preparacion` si el motor lo soporta; si no, cae a una busqueda `LIKE` tradicional.
 - Las imagenes se sirven por `FileController` y el destino fisico se puede ajustar con `UPLOAD_DIR` y `UPLOAD_DELIVERY_MODE`.
+- Las subidas de imagen se redimensionan y recomprimen automaticamente segun `UPLOAD_IMAGE_MAX_WIDTH`, `UPLOAD_IMAGE_MAX_HEIGHT`, `UPLOAD_IMAGE_QUALITY` y `UPLOAD_IMAGE_FORMAT`.
 - La recuperacion de contraseña en local sigue usando almacenamiento en disco para no depender de correo real.
