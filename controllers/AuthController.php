@@ -126,6 +126,8 @@ class AuthController {
         $usuario = $resultado['usuario'];
         $misRecetas = $resultado['misRecetas'];
         $misFavoritos = $resultado['misFavoritos'];
+        $twoFactorSetupSecret = $_SESSION['two_factor_setup_secret'] ?? null;
+        unset($_SESSION['two_factor_setup_secret']);
 
         require_once 'views/layouts/header.php';
         require_once 'views/auth/perfil.php';
@@ -203,7 +205,8 @@ class AuthController {
         if ($codigo === '') {
             $resultado = (new Usuario())->activarDosFactores($usuario['id'], $secret);
             if ($resultado) {
-                $_SESSION['mensaje_flash'] = 'Se ha generado tu secreto 2FA. Verifícalo con tu app de autenticación.';
+                $_SESSION['two_factor_setup_secret'] = $secret;
+                $_SESSION['mensaje_flash'] = 'Se ha generado tu secreto 2FA. Verifícalo ahora con tu app de autenticación.';
                 $_SESSION['tipo_flash'] = 'success';
             } else {
                 $_SESSION['mensaje_flash'] = 'No se pudo preparar el 2FA';
@@ -222,6 +225,7 @@ class AuthController {
 
         $modelo = new Usuario();
         if ($modelo->activarDosFactores($usuario['id'], $secret) && $modelo->confirmarDosFactores($usuario['id'])) {
+            unset($_SESSION['two_factor_setup_secret']);
             $_SESSION['mensaje_flash'] = '2FA activado correctamente';
             $_SESSION['tipo_flash'] = 'success';
         } else {
@@ -245,8 +249,18 @@ class AuthController {
         }
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
+        $passwordActual = $_POST['password_actual'] ?? '';
+        $usuario = (new Usuario())->obtenerPorIdConSeguridad($_SESSION['usuario_id']);
+        if (!$usuario || empty($usuario['password']) || !password_verify($passwordActual, $usuario['password'])) {
+            $_SESSION['mensaje_flash'] = 'La contraseña actual no es correcta';
+            $_SESSION['tipo_flash'] = 'error';
+            header('Location: index.php?controller=auth&action=perfil');
+            exit();
+        }
+
         $modelo = new Usuario();
         if ($modelo->desactivarDosFactores($_SESSION['usuario_id'])) {
+            unset($_SESSION['two_factor_setup_secret']);
             $_SESSION['mensaje_flash'] = '2FA desactivado';
             $_SESSION['tipo_flash'] = 'success';
         } else {

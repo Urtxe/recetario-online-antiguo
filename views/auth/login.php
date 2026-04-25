@@ -1,4 +1,7 @@
-<?php $isLocalDev = app_env('APP_ENV', 'local') === 'local'; ?>
+<?php
+$isLocalDev = app_env('APP_ENV', 'local') === 'local';
+$initialAuthTab = isset($error_registro) ? 'register' : 'login';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,7 +13,7 @@
 <body>
 <h1 class="titulo">Recetario Online</h1>
 
-<div class="contenedor-auth">
+<div class="contenedor-auth" data-initial-tab="<?php echo htmlspecialchars($initialAuthTab, ENT_QUOTES, 'UTF-8'); ?>">
   <?php if ($isLocalDev): ?>
     <div class="auth-banner">
       Modo local activo. La recuperación de contraseña muestra el token en pantalla y el 2FA queda listo para pruebas.
@@ -18,13 +21,14 @@
   <?php endif; ?>
   
   <div class="botones">
-    <button type="button" id="btn-login" class="tab-btn <?php echo isset($error_registro) ? '' : 'activo'; ?>" data-tab="login" aria-controls="panel-login" aria-selected="<?php echo isset($error_registro) ? 'false' : 'true'; ?>">Login</button>
-    <button type="button" id="btn-register" class="tab-btn <?php echo isset($error_registro) ? 'activo' : ''; ?>" data-tab="register" aria-controls="panel-registro" aria-selected="<?php echo isset($error_registro) ? 'true' : 'false'; ?>">Registrarte</button>
+    <button type="button" id="btn-login" class="tab-btn" data-tab="login" aria-controls="panel-login" aria-selected="true">Login</button>
+    <button type="button" id="btn-register" class="tab-btn" data-tab="register" aria-controls="panel-registro" aria-selected="false">Registrarte</button>
+    <button type="button" id="btn-recover" class="tab-btn" data-tab="recover" aria-controls="panel-recuperacion" aria-selected="false">Recuperar acceso</button>
   </div>
 
   <div class="paneles">
     <!-- Panel Login -->
-    <div id="panel-login" class="panel <?php echo isset($error_registro) ? '' : 'activo'; ?>" data-panel="login">
+    <div id="panel-login" class="panel <?php echo $initialAuthTab === 'login' ? 'activo' : ''; ?>" data-panel="login">
       <h3>Iniciar Sesión</h3>
       <?php if (isset($error_login)): ?>
         <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_login, ENT_QUOTES, 'UTF-8'); ?></p>
@@ -42,12 +46,12 @@
       </form>
 
       <div style="margin-top: 15px; text-align: center;">
-        <a href="#panel-recuperacion" style="font-size: 0.9rem;" data-scroll-panel="recover">¿Has olvidado tu contraseña?</a>
+        <a href="#panel-recuperacion" style="font-size: 0.9rem;" data-tab="recover" data-scroll-panel="recover">¿Has olvidado tu contraseña?</a>
       </div>
     </div>
 
     <!-- Panel Registro -->
-    <div id="panel-registro" class="panel <?php echo isset($error_registro) ? 'activo' : ''; ?>" data-panel="register">
+    <div id="panel-registro" class="panel <?php echo $initialAuthTab === 'register' ? 'activo' : ''; ?>" data-panel="register">
       <h3>Crear Cuenta</h3>
 
       <?php if (isset($error_registro)): ?>
@@ -87,7 +91,7 @@
       </div>
     <?php endif; ?>
 
-    <div id="panel-recuperacion" class="panel activo" style="margin-top: 20px;">
+    <div id="panel-recuperacion" class="panel" data-panel="recover" style="margin-top: 20px;">
       <h3>Recuperar contraseña</h3>
       <?php if ($isLocalDev): ?>
         <p class="auth-note">Aquí puedes probar el flujo sin correo real. El token te aparecerá en el mensaje flash después de solicitarlo.</p>

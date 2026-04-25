@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const btnLogin = document.getElementById('btn-login');
-    const btnRegister = document.getElementById('btn-register');
-    const panelLogin = document.getElementById('panel-login');
-    const panelRegistro = document.getElementById('panel-registro');
-    const recoverLink = document.querySelector('[data-scroll-panel="recover"]');
+    const container = document.querySelector('.contenedor-auth');
+    const tabControls = Array.from(document.querySelectorAll('[data-tab]'));
+    const panels = Array.from(document.querySelectorAll('.panel[data-panel]'));
 
-    if (!btnLogin || !btnRegister || !panelLogin || !panelRegistro) {
+    if (!container || tabControls.length === 0 || panels.length === 0) {
         return;
     }
+
+    const tabNames = ['login', 'register', 'recover'];
+    const panelMap = new Map(panels.map((panel) => [panel.dataset.panel, panel]));
 
     const focusFirstField = (panel) => {
         const field = panel.querySelector('input:not([type="hidden"]), textarea, select');
@@ -16,56 +17,65 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    function setActiveTab(tab) {
-        const showRegister = tab === 'register';
-
-        btnLogin.classList.toggle('activo', !showRegister);
-        btnRegister.classList.toggle('activo', showRegister);
-        btnLogin.setAttribute('aria-selected', showRegister ? 'false' : 'true');
-        btnRegister.setAttribute('aria-selected', showRegister ? 'true' : 'false');
-
-        panelLogin.classList.toggle('activo', !showRegister);
-        panelRegistro.classList.toggle('activo', showRegister);
-
-        try {
-            localStorage.setItem('recetario-auth-tab', tab);
-        } catch (error) {
-            // Sin storage: seguimos funcionando igual en local.
-        }
-
-        focusFirstField(showRegister ? panelRegistro : panelLogin);
-    }
-
-    const hash = window.location.hash.replace('#', '');
-    const storedTab = (() => {
+    const getStoredTab = () => {
         try {
             return localStorage.getItem('recetario-auth-tab');
         } catch (error) {
             return null;
         }
-    })();
-    const defaultTab = panelRegistro.classList.contains('activo') ? 'register' : 'login';
-    const initialTab = hash === 'panel-registro' ? 'register' : (storedTab === 'register' ? 'register' : defaultTab);
+    };
 
-    setActiveTab(initialTab);
+    function setActiveTab(tab, options = {}) {
+        const resolvedTab = tabNames.includes(tab) ? tab : 'login';
+        const { persist = true, focus = true } = options;
 
-    btnRegister.addEventListener('click', () => setActiveTab('register'));
-    btnLogin.addEventListener('click', () => setActiveTab('login'));
-
-    if (recoverLink) {
-        recoverLink.addEventListener('click', () => {
-            try {
-                localStorage.setItem('recetario-auth-tab', 'login');
-            } catch (error) {
-                // No-op.
-            }
+        tabControls.forEach((control) => {
+            const isActive = control.dataset.tab === resolvedTab;
+            control.classList.toggle('activo', isActive);
+            control.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
-    }
 
-    if (hash === 'panel-recuperacion') {
-        const recoverPanel = document.getElementById('panel-recuperacion');
-        if (recoverPanel) {
-            setTimeout(() => recoverPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+        panels.forEach((panel) => {
+            if (!panel.dataset.panel) {
+                return;
+            }
+            panel.classList.toggle('activo', panel.dataset.panel === resolvedTab);
+        });
+
+        if (persist) {
+            try {
+                localStorage.setItem('recetario-auth-tab', resolvedTab);
+            } catch (error) {
+                // Sin storage: seguimos funcionando igual en local.
+            }
+        }
+
+        if (focus && panelMap.has(resolvedTab)) {
+            focusFirstField(panelMap.get(resolvedTab));
+        }
+
+        if (resolvedTab === 'recover' && panelMap.has('recover')) {
+            setTimeout(() => {
+                panelMap.get('recover').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
         }
     }
+
+    const hash = window.location.hash.replace('#', '');
+    const storedTab = getStoredTab();
+    const serverDefault = container.dataset.initialTab || 'login';
+    const initialTab = hash === 'panel-recuperacion'
+        ? 'recover'
+        : (tabNames.includes(storedTab) ? storedTab : serverDefault);
+
+    setActiveTab(initialTab, { persist: false });
+
+    tabControls.forEach((control) => {
+        control.addEventListener('click', (event) => {
+            if (control.tagName === 'A') {
+                event.preventDefault();
+            }
+            setActiveTab(control.dataset.tab || 'login');
+        });
+    });
 });
