@@ -113,3 +113,123 @@ SET @sql := (
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Indices para listados y filtros frecuentes
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'recetas'
+              AND index_name = 'idx_recetas_usuario_id'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_recetas_usuario_id ON recetas (usuario_id)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'recetas'
+              AND index_name = 'idx_recetas_origen'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_recetas_origen ON recetas (origen)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'recetas'
+              AND index_name = 'idx_recetas_dificultad'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_recetas_dificultad ON recetas (dificultad)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'recetas'
+              AND index_name = 'idx_recetas_tipo'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_recetas_tipo ON recetas (tipo)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'recetas'
+              AND index_name = 'idx_recetas_duracion'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_recetas_duracion ON recetas (duracion)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'ingredientes'
+              AND index_name = 'idx_ingredientes_receta_id'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_ingredientes_receta_id ON ingredientes (receta_id)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = @db_name
+              AND table_name = 'ingredientes'
+              AND index_name = 'idx_ingredientes_nombre'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_ingredientes_nombre ON ingredientes (nombre)'
+    )
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
