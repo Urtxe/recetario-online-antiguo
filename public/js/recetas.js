@@ -29,14 +29,61 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let html = '<div class="paginacion">';
         for (let i = 1; i <= totalPaginas; i++) {
-            const url = new URL(window.location.href);
-            url.search = params.toString();
-            url.searchParams.set('pagina', i);
+            const viewParams = new URLSearchParams(params.toString());
+            viewParams.set('controller', 'receta');
+            viewParams.set('action', 'index');
+            viewParams.delete('ajax');
+            viewParams.set('pagina', i);
             const active = i === paginaActual ? ' active' : '';
-            html += `<a href="${url.toString()}" class="${active.trim()}">${i}</a>`;
+            html += `<a href="index.php?${viewParams.toString()}" class="${active.trim()}">${i}</a>`;
         }
         html += '</div>';
         return html;
+    }
+
+    function buildRecipeCard(receta, usuarioIdActual) {
+        const tieneImagen = receta.imagen_src && receta.imagen_src.length > 0;
+        const esAutor = usuarioIdActual === receta.usuario_id;
+        const favIcon = receta.es_favorito ? '❤️' : '🤍';
+        const imageHtml = tieneImagen
+            ? `<img src="${escapeHtml(receta.imagen_src)}" class="receta-miniatura" alt="${escapeHtml(receta.titulo)}">`
+            : '<div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>';
+        const popularityHtml = Number(receta.favorite_count || 0) > 0
+            ? `<span class="recipe-chip">Favoritos: ${escapeHtml(receta.favorite_count)}</span>`
+            : '';
+
+        return `
+            <div class="receta-item">
+                <div class="btn-fav-container">
+                    <button class="btn-fav" data-id="${receta.id}">${favIcon}</button>
+                </div>
+                <a href="index.php?controller=receta&action=ver&id=${receta.id}" class="link-estirado" aria-label="${escapeHtml(receta.titulo)}">
+                    ${imageHtml}
+                    <div class="recipe-card-body">
+                        <h3 class="receta-titulo">${escapeHtml(receta.titulo)}</h3>
+                        <p class="recipe-card-meta">
+                            <strong>Origen:</strong> ${escapeHtml(receta.origen)}<br>
+                            <strong>Tipo:</strong> ${escapeHtml(receta.tipo)}<br>
+                            <strong>Tiempo:</strong> ${escapeHtml(receta.duracion)} min
+                        </p>
+                        <div class="recipe-card-footer">
+                            <p class="recipe-author-label">Por: ${escapeHtml(receta.nombre_autor)}</p>
+                            ${popularityHtml}
+                        </div>
+                    </div>
+                </a>
+                ${esAutor ? `
+                    <div class="grid-admin-buttons">
+                        <a href="index.php?controller=receta&action=editar&id=${receta.id}" class="btn-edit-mini">Editar</a>
+                        <form action="index.php?controller=receta&action=borrar&id=${receta.id}" method="post" style="display:inline;" onsubmit="return confirm('¿Seguro?')">
+                            <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
+                            <input type="hidden" name="id" value="${receta.id}">
+                            <button type="submit" class="btn-delete-mini">Borrar</button>
+                        </form>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     function buildGrid(recetas, usuarioIdActual) {
@@ -46,49 +93,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         return `
             <div class="recetas-grid-container">
-                ${recetas.map(receta => {
-                    const tieneImagen = receta.imagen_url && receta.imagen_url.length > 0;
-                    const esAutor = usuarioIdActual === receta.usuario_id;
-                    const favIcon = receta.es_favorito ? '❤️' : '🤍';
-                    const imageHtml = tieneImagen
-                        ? `<img src="public/uploads/${escapeHtml(receta.imagen_url)}" class="receta-miniatura">`
-                        : '<div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>';
-                    const deleteForm = esAutor ? `
-                        <form action="index.php?controller=receta&action=borrar&id=${receta.id}" method="post" style="display:inline;" onsubmit="return confirm('¿Seguro?')">
-                            <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
-                            <input type="hidden" name="id" value="${receta.id}">
-                            <button type="submit" class="btn-delete-mini">Borrar</button>
-                        </form>
-                    ` : '';
-
-                    return `
-                        <div class="receta-item">
-                            <div class="btn-fav-container">
-                                <button class="btn-fav" data-id="${receta.id}">${favIcon}</button>
-                            </div>
-                            <a href="index.php?controller=receta&action=ver&id=${receta.id}" class="link-estirado" alt="${escapeHtml(receta.titulo)}">
-                                ${imageHtml}
-                                <div style="padding: 15px; flex-grow: 1;">
-                                    <h3 class="receta-titulo">${escapeHtml(receta.titulo)}</h3>
-                                    <p style="font-size: 0.85rem; color: #666; margin: 8px 0;">
-                                        <strong>🌍 Origen:</strong> ${escapeHtml(receta.origen)}<br>
-                                        <strong>🍽️ Tipo:</strong> ${escapeHtml(receta.tipo)}<br>
-                                        <strong>⏱️ Tiempo:</strong> ${escapeHtml(receta.duracion)} min
-                                    </p>
-                                    <p style="font-size: 0.85rem; color: #E67E22; font-weight: bold;">
-                                        Por: ${escapeHtml(receta.nombre_autor)}
-                                    </p>
-                                </div>
-                            </a>
-                            ${esAutor ? `
-                                <div class="grid-admin-buttons">
-                                    <a href="index.php?controller=receta&action=editar&id=${receta.id}" class="btn-edit-mini">Editar</a>
-                                    ${deleteForm}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                }).join('')}
+                ${recetas.map(receta => buildRecipeCard(receta, usuarioIdActual)).join('')}
             </div>
         `;
     }
@@ -96,11 +101,9 @@ document.addEventListener("DOMContentLoaded", function() {
     function realizarBusqueda(pagina) {
         const formData = new FormData(formFiltros);
         const params = new URLSearchParams(formData);
-        params.delete('controller');
-        params.delete('action');
         params.set('controller', 'api');
         params.set('action', 'recetas');
-        if (pagina) params.set('pagina', pagina);
+        params.set('pagina', pagina || 1);
 
         fetch(apiBase + '?' + params.toString())
             .then(response => {
@@ -115,6 +118,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 contenedorGrid.innerHTML = buildGrid(payload.data.recetas, payload.data.usuario_id_actual);
                 contenedorGrid.innerHTML += buildPagination(payload.data.pagina, payload.data.total_paginas, params);
                 bindPaginacion();
+                const currentUrlParams = new URLSearchParams(new FormData(formFiltros));
+                currentUrlParams.set('controller', 'receta');
+                currentUrlParams.set('action', 'index');
+                currentUrlParams.set('pagina', payload.data.pagina);
+                window.history.replaceState(null, '', `index.php?${currentUrlParams.toString()}`);
             })
             .catch(error => console.error('Error:', error));
     }

@@ -26,17 +26,31 @@ class Receta {
 
     // Listar con filtros y paginación
     public function listarConFiltros($filtros, $limit, $offset) {
-        $sql = "SELECT recetas.*, usuarios.nombre AS nombre_autor 
+        $params = [];
+        $types = '';
+        $relevanceSelect = $this->construirSelectRelevancia($filtros, $params, $types);
+
+        $sql = "SELECT recetas.*, usuarios.nombre AS nombre_autor,
+                COALESCE(favoritos_resumen.favorite_count, 0) AS favorite_count,
+                {$relevanceSelect}
                 FROM recetas 
-                JOIN usuarios ON recetas.usuario_id = usuarios.id";
+                JOIN usuarios ON recetas.usuario_id = usuarios.id
+                LEFT JOIN (
+                    SELECT receta_id, COUNT(*) AS favorite_count
+                    FROM favoritos
+                    GROUP BY receta_id
+                ) AS favoritos_resumen ON favoritos_resumen.receta_id = recetas.id";
         
-        list($where, $params, $types) = $this->construirWhere($filtros);
+        list($where, $whereParams, $whereTypes) = $this->construirWhere($filtros);
+        $params = array_merge($params, $whereParams);
+        $types .= $whereTypes;
 
         if (!empty($where)) {
             $sql .= " WHERE " . implode(" AND ", $where);
         }
 
-        $sql .= " ORDER BY recetas.id DESC LIMIT ? OFFSET ?";
+        $sql .= $this->construirOrden($filtros);
+        $sql .= " LIMIT ? OFFSET ?";
         $types .= "ii";
         $params[] = $limit;
         $params[] = $offset;
@@ -122,6 +136,38 @@ class Receta {
         }
 
         return [$where, $params, $types];
+    }
+
+    private function construirSelectRelevancia($filtros, array &$params, &$types) {
+        $texto = trim((string)($filtros['buscar'] ?? ''));
+        if ($texto === '' || !$this->puedeUsarBusquedaTextoCompleto($texto)) {
+            return "0 AS relevance_score";
+        }
+
+        $params[] = $this->textoABooleanoFulltext($texto);
+        $types .= 's';
+        return "MATCH(recetas.titulo, recetas.preparacion) AGAINST (? IN BOOLEAN MODE) AS relevance_score";
+    }
+
+    private function construirOrden($filtros) {
+        $orden = $this->ordenPermitido($filtros['orden'] ?? '');
+        $texto = trim((string)($filtros['buscar'] ?? ''));
+
+        if ($orden === 'relevancia' && $texto !== '' && $this->puedeUsarBusquedaTextoCompleto($texto)) {
+            return " ORDER BY relevance_score DESC, favorite_count DESC, recetas.id DESC ";
+        }
+
+        if ($orden === 'popularidad') {
+            return " ORDER BY favorite_count DESC, recetas.id DESC ";
+        }
+
+        return " ORDER BY recetas.id DESC ";
+    }
+
+    private function ordenPermitido($orden) {
+        $orden = strtolower(trim((string)$orden));
+        $permitidos = ['fecha', 'relevancia', 'popularidad'];
+        return in_array($orden, $permitidos, true) ? $orden : 'fecha';
     }
 
     private function puedeUsarBusquedaTextoCompleto($texto) {

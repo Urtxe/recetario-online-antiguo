@@ -30,6 +30,43 @@
     box-shadow: var(--shadow-lg);
 }
 
+.recipe-card-body {
+    padding: 15px;
+    flex-grow: 1;
+}
+
+.recipe-card-meta {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 8px 0;
+}
+
+.recipe-card-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.recipe-author-label {
+    font-size: 0.85rem;
+    color: #e67e22;
+    font-weight: bold;
+    margin: 0;
+}
+
+.recipe-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fff4e9;
+    color: #9a4f00;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
 /* Miniatura de receta */
 .receta-miniatura {
     width: 100%;
@@ -172,4 +209,11 @@
     text-align: center;
     border-top: 1px solid var(--color-border-light);
     padding-top: 20px;
+}
+
+.filter-help {
+    display: block;
+    margin-top: -6px;
+    color: #666;
+    font-size: 0.82rem;
 }
