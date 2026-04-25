@@ -78,7 +78,8 @@ class RecetaController extends BaseController {
             'duracion' => $_GET['duracion'] ?? '',
             'tipo' => $_GET['tipo'] ?? '',
             'usuario' => $_GET['usuario'] ?? '',
-            'ingredientes' => $_GET['ingredientes'] ?? ''
+            'ingredientes' => $_GET['ingredientes'] ?? '',
+            'orden' => $_GET['orden'] ?? 'fecha'
         ];
 
         $pagina = max(1, isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1);
@@ -94,6 +95,11 @@ class RecetaController extends BaseController {
         $favoritos_ids = $listado['favoritos_ids'];
         $total_recetas = $listado['total_recetas'];
         $total_paginas = $listado['total_paginas'];
+        $ordenes_disponibles = [
+            'fecha' => 'Más recientes',
+            'relevancia' => 'Más relevantes',
+            'popularidad' => 'Más populares'
+        ];
 
         if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
             require_once 'views/recetas/grid.php';

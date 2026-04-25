@@ -13,22 +13,25 @@
                     </button>
                 </div>
 
-                    <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado" alt="<?php echo htmlspecialchars($receta['titulo']); ?>">
-                        <?php if (!empty($receta['imagen_url'])): ?>
+                <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado" aria-label="<?php echo htmlspecialchars($receta['titulo']); ?>">
+                    <?php if (!empty($receta['imagen_url'])): ?>
                         <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" class="receta-miniatura">
-                        <?php else: ?>
-                            <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>                    
-                        <?php endif; ?>
-                    <div style="padding: 15px; flex-grow: 1;">
+                    <?php else: ?>
+                        <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>
+                    <?php endif; ?>
+                    <div class="recipe-card-body">
                         <h3 class="receta-titulo"><?php echo htmlspecialchars($receta['titulo']); ?></h3>
-                        <p style="font-size: 0.85rem; color: #666; margin: 8px 0;">
-                            <strong>🌍 Origen:</strong> <?php echo htmlspecialchars($receta['origen']); ?><br>
-                            <strong>🍽️ Tipo:</strong> <?php echo htmlspecialchars($receta['tipo']); ?><br>
-                            <strong>⏱️ Tiempo:</strong> <?php echo htmlspecialchars($receta['duracion']); ?> min
+                        <p class="recipe-card-meta">
+                            <strong>Origen:</strong> <?php echo htmlspecialchars($receta['origen']); ?><br>
+                            <strong>Tipo:</strong> <?php echo htmlspecialchars($receta['tipo']); ?><br>
+                            <strong>Tiempo:</strong> <?php echo htmlspecialchars($receta['duracion']); ?> min
                         </p>
-                        <p style="font-size: 0.85rem; color: #E67E22; font-weight: bold;">
-                            Por: <?php echo htmlspecialchars($receta['nombre_autor']); ?>
-                        </p>
+                        <div class="recipe-card-footer">
+                            <p class="recipe-author-label">Por: <?php echo htmlspecialchars($receta['nombre_autor']); ?></p>
+                            <?php if (!empty($receta['favorite_count'])): ?>
+                                <span class="recipe-chip">Favoritos: <?php echo (int)$receta['favorite_count']; ?></span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </a>
 

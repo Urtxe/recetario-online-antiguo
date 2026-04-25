@@ -133,6 +133,7 @@ class FakeUsuarioRepo {
 class FakeRecetaRepo {
     public $recipes;
     public $ingredients;
+    public $favoriteCounts;
 
     public function __construct() {
         $this->recipes = [
@@ -171,6 +172,10 @@ class FakeRecetaRepo {
                 ['nombre' => 'Nata', 'cantidad' => '100ml']
             ]
         ];
+        $this->favoriteCounts = [
+            10 => 1,
+            11 => 4
+        ];
     }
 
     public function iniciarTransaccion() {}
@@ -181,6 +186,21 @@ class FakeRecetaRepo {
         $filtered = array_values(array_filter($this->recipes, function ($recipe) use ($filtros) {
             return $this->matchesFilters($recipe, $filtros);
         }));
+
+        foreach ($filtered as &$recipe) {
+            $recipe['favorite_count'] = $this->favoriteCounts[$recipe['id']] ?? 0;
+        }
+        unset($recipe);
+
+        if (($filtros['orden'] ?? 'fecha') === 'popularidad') {
+            usort($filtered, function ($a, $b) {
+                return [$b['favorite_count'], $b['id']] <=> [$a['favorite_count'], $a['id']];
+            });
+        } else {
+            usort($filtered, function ($a, $b) {
+                return $b['id'] <=> $a['id'];
+            });
+        }
 
         return new FakeResult(array_slice($filtered, $offset, $limit));
     }
@@ -454,6 +474,10 @@ $tests['search'] = function () {
 
     $searchByAuthor = $service->listData(['buscar' => 'admin'], 1, 12, 2);
     assert_equals(1, $searchByAuthor['total_recetas'], 'La búsqueda por autor debe filtrar resultados');
+
+    $popular = $service->listData(['buscar' => '', 'orden' => 'popularidad'], 1, 12, 2);
+    $first = $popular['recetas']->fetch_assoc();
+    assert_equals(11, $first['id'], 'La ordenación por popularidad debe traer primero la receta con más favoritos');
 };
 
 $tests['admin_helper'] = function () {

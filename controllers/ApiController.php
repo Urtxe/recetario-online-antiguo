@@ -24,7 +24,8 @@ class ApiController extends BaseController {
             'duracion' => $_GET['duracion'] ?? '',
             'tipo' => $_GET['tipo'] ?? '',
             'usuario' => $_GET['usuario'] ?? '',
-            'ingredientes' => $_GET['ingredientes'] ?? ''
+            'ingredientes' => $_GET['ingredientes'] ?? '',
+            'orden' => $_GET['orden'] ?? 'fecha'
         ];
     }
 
@@ -47,8 +48,10 @@ class ApiController extends BaseController {
                 'origen' => $receta['origen'],
                 'tipo' => $receta['tipo'],
                 'imagen_url' => $receta['imagen_url'],
+                'imagen_src' => recipe_image_url($receta['imagen_url'] ?? ''),
                 'nombre_autor' => $receta['nombre_autor'],
                 'usuario_id' => (int)$receta['usuario_id'],
+                'favorite_count' => (int)($receta['favorite_count'] ?? 0),
                 'es_favorito' => isset($listado['favoritos_ids'][(int)$receta['id']])
             ];
         }
