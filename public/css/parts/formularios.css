@@ -63,6 +63,44 @@
     border-color: var(--color-primary);
 }
 
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.form-row-split .form-field {
+    flex: 1 1 220px;
+}
+
+.form-field {
+    min-width: 0;
+}
+
+.form-section-heading {
+    margin-top: 0.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.form-actions-compact {
+    margin-top: 15px;
+}
+
+.help-link-row {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.helper-link {
+    font-size: 0.9rem;
+}
+
+.error-msg {
+    color: var(--color-error);
+    text-align: center;
+}
+
 /* ========== INGREDIENTES ========== */
 
 /* Contenedor de ingrediente en formulario de edición */
@@ -74,12 +112,25 @@
     width: 100%;
 }
 
+.ingredient-list-editor {
+    display: flex;
+    flex-direction: column;
+}
+
 .ingredient-item input {
     flex: 1;
     padding: 0.8rem;
     border: 1px solid #ccc;
     border-radius: var(--radius-sm);
     width: 100%;
+}
+
+.recipe-form-image-preview {
+    width: 120px;
+    display: block;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    object-fit: cover;
 }
 
 /* Lista de ingredientes en vista detalle */

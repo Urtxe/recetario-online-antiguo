@@ -143,6 +143,19 @@ class RecetaController extends BaseController {
     public function crear() {
         $this->verificarSesion();
         $usuario_nombre = $_SESSION['usuario_nombre'];
+        $receta = [
+            'titulo' => '',
+            'duracion' => '',
+            'dificultad' => 'facil',
+            'origen' => '',
+            'tipo' => '',
+            'imagen_url' => '',
+            'preparacion' => ''
+        ];
+        $ingredientes = [['nombre' => '', 'cantidad' => '']];
+        $opciones_dificultad = $this->dificultadesPermitidas;
+        $opciones_origen = $this->origenesPermitidos;
+        $opciones_tipo = $this->tiposPermitidos;
 
         require_once 'views/layouts/header.php';
         require_once 'views/recetas/crear.php';
@@ -253,6 +266,9 @@ class RecetaController extends BaseController {
         while ($ing = $resultadoIngredientes->fetch_assoc()) {
             $ingredientes[] = $ing;
         }
+        $opciones_dificultad = $this->dificultadesPermitidas;
+        $opciones_origen = $this->origenesPermitidos;
+        $opciones_tipo = $this->tiposPermitidos;
 
         require_once 'views/layouts/header.php';
         require_once 'views/recetas/editar.php';
@@ -309,11 +325,7 @@ class RecetaController extends BaseController {
 
     public function favorito() {
         $this->verificarSesion();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
-            exit();
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
         $receta_id = $_POST['id'] ?? null;
@@ -322,7 +334,7 @@ class RecetaController extends BaseController {
         if ($receta_id) {
             $this->jsonResponse($this->recipeService->toggleFavorite($usuario_id, $receta_id));
         }
-        exit();
+
+        $this->jsonResponse(['success' => false, 'message' => 'Receta no válida'], 400);
     }
 }
-?>

@@ -31,7 +31,7 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
     <div id="panel-login" class="panel <?php echo $initialAuthTab === 'login' ? 'activo' : ''; ?>" data-panel="login">
       <h3>Iniciar Sesión</h3>
       <?php if (isset($error_login)): ?>
-        <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_login, ENT_QUOTES, 'UTF-8'); ?></p>
+        <p class="error-msg"><?php echo htmlspecialchars($error_login, ENT_QUOTES, 'UTF-8'); ?></p>
       <?php endif; ?>
 
       <form action="index.php?controller=auth&action=login" method="post">
@@ -45,8 +45,8 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
         <button type="submit">Entrar</button>
       </form>
 
-      <div style="margin-top: 15px; text-align: center;">
-        <a href="#panel-recuperacion" style="font-size: 0.9rem;" data-tab="recover" data-scroll-panel="recover">¿Has olvidado tu contraseña?</a>
+      <div class="help-link-row">
+        <a href="#panel-recuperacion" class="helper-link" data-tab="recover" data-scroll-panel="recover">¿Has olvidado tu contraseña?</a>
       </div>
     </div>
 
@@ -55,7 +55,7 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
       <h3>Crear Cuenta</h3>
 
       <?php if (isset($error_registro)): ?>
-        <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_registro, ENT_QUOTES, 'UTF-8'); ?></p>
+        <p class="error-msg"><?php echo htmlspecialchars($error_registro, ENT_QUOTES, 'UTF-8'); ?></p>
       <?php endif; ?>
 
       <form action="index.php?controller=auth&action=registro" method="post">
@@ -77,10 +77,10 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
     </div>
 
     <?php if (isset($_SESSION['pending_2fa_user'])): ?>
-      <div id="panel-2fa" class="panel activo" style="margin-top: 20px;">
+      <div id="panel-2fa" class="panel activo panel-2fa">
         <h3>Verificación en dos pasos</h3>
         <?php if (isset($error_2fa)): ?>
-          <p class="error-msg" style="color: red; text-align:center;"><?php echo htmlspecialchars($error_2fa, ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="error-msg"><?php echo htmlspecialchars($error_2fa, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
         <form action="index.php?controller=auth&action=verificar2fa" method="post">
           <?php echo csrf_field(); ?>
@@ -91,7 +91,7 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
       </div>
     <?php endif; ?>
 
-    <div id="panel-recuperacion" class="panel" data-panel="recover" style="margin-top: 20px;">
+    <div id="panel-recuperacion" class="panel panel-recuperacion" data-panel="recover">
       <h3>Recuperar contraseña</h3>
       <?php if ($isLocalDev): ?>
         <p class="auth-note">Aquí puedes probar el flujo sin correo real. El token te aparecerá en el mensaje flash después de solicitarlo.</p>
@@ -103,7 +103,7 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
         <button type="submit">Solicitar enlace</button>
       </form>
 
-      <form action="index.php?controller=auth&action=resetearPassword" method="post" style="margin-top: 15px;">
+      <form action="index.php?controller=auth&action=resetearPassword" method="post" class="form-actions-compact">
         <?php echo csrf_field(); ?>
         <label for="reset-token">Token de recuperación</label>
         <input type="text" id="reset-token" name="reset_token" required autocomplete="one-time-code">

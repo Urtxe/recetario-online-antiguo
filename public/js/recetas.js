@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 ${esAutor ? `
                     <div class="grid-admin-buttons">
                         <a href="index.php?controller=receta&action=editar&id=${receta.id}" class="btn-edit-mini">Editar</a>
-                        <form action="index.php?controller=receta&action=borrar&id=${receta.id}" method="post" style="display:inline;" onsubmit="return confirm('¿Seguro?')">
+                        <form action="index.php?controller=receta&action=borrar&id=${receta.id}" method="post" class="inline-form" data-confirm="¿Seguro?">
                             <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
                             <input type="hidden" name="id" value="${receta.id}">
                             <button type="submit" class="btn-delete-mini">Borrar</button>
@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function buildGrid(recetas, usuarioIdActual) {
         if (!recetas.length) {
-            return '<p style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #777;">No se encontraron recetas</p>';
+            return '<p class="empty-state">No se encontraron recetas</p>';
         }
 
         return `

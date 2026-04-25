@@ -28,7 +28,7 @@ class AdminController extends BaseController {
         $this->verificarAdmin();
         $this->maintenanceService->runHousekeeping();
 
-        $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $pagina = max(1, isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1);
         $por_pagina = 15;
         $listado = $this->recipeService->getPendingModerationData($pagina, $por_pagina);
 

@@ -15,7 +15,7 @@
 
                 <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado" aria-label="<?php echo htmlspecialchars($receta['titulo']); ?>">
                     <?php if (!empty($receta['imagen_url'])): ?>
-                        <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" class="receta-miniatura">
+                        <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" class="receta-miniatura" alt="<?php echo htmlspecialchars($receta['titulo'], ENT_QUOTES, 'UTF-8'); ?>">
                     <?php else: ?>
                         <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>
                     <?php endif; ?>
@@ -38,7 +38,7 @@
                 <?php if ($_SESSION['usuario_id'] == $receta['usuario_id']): ?>
                     <div class="grid-admin-buttons">
                         <a href="index.php?controller=receta&action=editar&id=<?php echo $receta['id']; ?>" class="btn-edit-mini">Editar</a>
-                        <form action="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" method="post" style="display:inline;" onsubmit="return confirm('¿Seguro?')">
+                        <form action="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" method="post" class="inline-form" data-confirm="¿Seguro?">
                             <?php echo csrf_field(); ?>
                             <input type="hidden" name="id" value="<?php echo $receta['id']; ?>">
                             <button type="submit" class="btn-delete-mini">Borrar</button>
@@ -48,8 +48,6 @@
             </div>
         <?php endwhile; ?>
     <?php else: ?>
-        <p style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #777;">
-            No se encontraron recetas
-        </p>
+        <p class="empty-state">No se encontraron recetas</p>
     <?php endif; ?>
 </div>

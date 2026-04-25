@@ -18,6 +18,16 @@ button[type="submit"]:hover {
     background-color: var(--color-primary-hover);
 }
 
+.button-link {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+}
+
 /* Botón de búsqueda */
 .form-filtros button {
     padding: 0.75rem 1.25rem;
@@ -60,18 +70,26 @@ button[type="submit"]:hover {
     color: white;
     border: none;
     border-radius: 50%;
-    width: 15px;
-    height: 15px;
+    width: 30px;
+    height: 30px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.2s;
     flex-shrink: 0;
+    font-size: 1.1rem;
+    line-height: 1;
 }
 
 .btn-remove:hover {
     background-color: var(--color-error);
+}
+
+.btn-remove.is-disabled,
+.btn-remove:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 /* Botón de edición */
@@ -109,10 +127,6 @@ button[type="submit"]:hover {
 .btn-delete:hover,
 .btn-delete-mini:hover {
     opacity: 0.9;
-}
-
-.btn-delete-mini {
-    margin-right: 275px;
 }
 
 /* Botón de favorito */
@@ -160,6 +174,12 @@ button[type="submit"]:hover {
     border-radius: var(--radius-sm);
     text-align: center;
     font-weight: bold;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.alerta.is-hiding {
+    opacity: 0;
+    transform: translateY(-6px);
 }
 
 .alerta-success {
@@ -226,4 +246,34 @@ button[type="submit"]:hover {
 
 .close-modal:hover {
     opacity: 0.7;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.section-panel {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border-radius: 8px;
+}
+
+.section-panel + .section-panel {
+    margin-top: 24px;
+}
+
+.section-title {
+    margin: 0 0 18px 0;
+}
+
+.stack-sm > * + * {
+    margin-top: 10px;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #777;
 }
