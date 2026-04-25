@@ -54,6 +54,15 @@ document.addEventListener('DOMContentLoaded', function () {
             focusFirstField(panelMap.get(resolvedTab));
         }
 
+        if (window.history && typeof window.history.replaceState === 'function') {
+            const hashByTab = {
+                login: '#panel-login',
+                register: '#panel-registro',
+                recover: '#panel-recuperacion',
+            };
+            window.history.replaceState(null, '', hashByTab[resolvedTab] || '#panel-login');
+        }
+
         if (resolvedTab === 'recover' && panelMap.has('recover')) {
             setTimeout(() => {
                 panelMap.get('recover').scrollIntoView({ behavior: 'smooth', block: 'start' });

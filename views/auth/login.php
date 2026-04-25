@@ -37,10 +37,10 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
       <form action="index.php?controller=auth&action=login" method="post">
         <?php echo csrf_field(); ?>
         <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required placeholder="ejemplo@correo.com">
+        <input type="email" id="email" name="email" required placeholder="ejemplo@correo.com" autocomplete="email">
         
         <label for="login-pass">Contraseña:</label>
-        <input type="password" id="login-pass" name="password" required>
+        <input type="password" id="login-pass" name="password" required autocomplete="current-password">
         
         <button type="submit">Entrar</button>
       </form>
@@ -61,16 +61,16 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
       <form action="index.php?controller=auth&action=registro" method="post">
         <?php echo csrf_field(); ?>
         <label for="reg-usuario">Usuario:</label>
-        <input type="text" id="reg-usuario" name="usuario" required>
+        <input type="text" id="reg-usuario" name="usuario" required autocomplete="nickname">
         
         <label for="reg-email">Email:</label>
-        <input type="email" id="reg-email" name="email" required>
+        <input type="email" id="reg-email" name="email" required autocomplete="email">
         
         <label for="reg-pass">Contraseña:</label>
-        <input type="password" id="reg-pass" name="password" required>
+        <input type="password" id="reg-pass" name="password" required autocomplete="new-password">
         
         <label for="reg-pass-conf">Confirmar Contraseña:</label>
-        <input type="password" id="reg-pass-conf" name="password-confirm" required>
+        <input type="password" id="reg-pass-conf" name="password-confirm" required autocomplete="new-password">
         
         <button type="submit">Registrarme</button>
       </form>
@@ -99,20 +99,20 @@ $initialAuthTab = isset($error_registro) ? 'register' : 'login';
       <form action="index.php?controller=auth&action=solicitarRecuperacion" method="post">
         <?php echo csrf_field(); ?>
         <label for="reset-email">Email</label>
-        <input type="email" id="reset-email" name="email" required>
+        <input type="email" id="reset-email" name="email" required autocomplete="email">
         <button type="submit">Solicitar enlace</button>
       </form>
 
       <form action="index.php?controller=auth&action=resetearPassword" method="post" style="margin-top: 15px;">
         <?php echo csrf_field(); ?>
         <label for="reset-token">Token de recuperación</label>
-        <input type="text" id="reset-token" name="reset_token" required>
+        <input type="text" id="reset-token" name="reset_token" required autocomplete="one-time-code">
 
         <label for="reset-pass">Nueva contraseña</label>
-        <input type="password" id="reset-pass" name="password" required>
+        <input type="password" id="reset-pass" name="password" required autocomplete="new-password">
 
         <label for="reset-pass-confirm">Confirmar contraseña</label>
-        <input type="password" id="reset-pass-confirm" name="password_confirm" required>
+        <input type="password" id="reset-pass-confirm" name="password_confirm" required autocomplete="new-password">
 
         <button type="submit">Cambiar contraseña</button>
       </form>
