@@ -76,9 +76,27 @@ function ensure_directory($path) {
     }
 }
 
+function rotate_security_log($path, $maxBytes = 5242880, $keep = 3) {
+    if (!file_exists($path) || filesize($path) < $maxBytes) {
+        return;
+    }
+
+    for ($i = $keep - 1; $i >= 1; $i--) {
+        $source = $path . '.' . $i;
+        $target = $path . '.' . ($i + 1);
+        if (file_exists($source)) {
+            @rename($source, $target);
+        }
+    }
+
+    @rename($path, $path . '.1');
+}
+
 function security_log($event, array $context = [], $level = 'info') {
     $dir = storage_path('storage/logs');
     ensure_directory($dir);
+    $path = $dir . DIRECTORY_SEPARATOR . 'security.log';
+    rotate_security_log($path);
 
     $line = json_encode([
         'ts' => date('c'),
@@ -89,7 +107,7 @@ function security_log($event, array $context = [], $level = 'info') {
         'context' => $context
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-    file_put_contents($dir . DIRECTORY_SEPARATOR . 'security.log', $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+    file_put_contents($path, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
 }
 
 function rate_limit_storage_path($key) {
@@ -120,6 +138,12 @@ function rate_limit_check_db($key, $maxAttempts, $windowSeconds) {
     $keyHash = hash('sha256', $key);
     $now = time();
     $windowStart = $now - $windowSeconds;
+    static $pruned = false;
+
+    if (!$pruned) {
+        rate_limit_prune_db();
+        $pruned = true;
+    }
 
     $stmt = $db->prepare("SELECT attempts, window_started_at FROM security_rate_limits WHERE rate_key = ?");
     $stmt->bind_param("s", $keyHash);
@@ -186,6 +210,12 @@ function rate_limit_clear_db($key) {
     $stmt = $db->prepare("DELETE FROM security_rate_limits WHERE rate_key = ?");
     $stmt->bind_param("s", $keyHash);
     return $stmt->execute();
+}
+
+function rate_limit_prune_db($days = 30) {
+    $db = Database::conectar();
+    $days = max(1, (int)$days);
+    return $db->query("DELETE FROM security_rate_limits WHERE updated_at < (NOW() - INTERVAL {$days} DAY)");
 }
 
 function csrf_token() {
@@ -393,6 +423,7 @@ function password_reset_storage_path() {
 function store_password_reset_token($email, $tokenHash, $expiresAt) {
     $path = password_reset_storage_path();
     ensure_directory(dirname($path));
+    prune_password_reset_storage($path);
 
     $data = [];
     if (file_exists($path)) {
@@ -419,6 +450,7 @@ function find_password_reset_entry($token) {
         return null;
     }
 
+    prune_password_reset_storage($path);
     $decoded = json_decode(file_get_contents($path), true);
     if (!is_array($decoded)) {
         return null;
@@ -440,6 +472,7 @@ function consume_password_reset_token($token) {
         return false;
     }
 
+    prune_password_reset_storage($path);
     $decoded = json_decode(file_get_contents($path), true);
     if (!is_array($decoded)) {
         return false;
@@ -461,4 +494,31 @@ function consume_password_reset_token($token) {
     }
 
     return $changed;
+}
+
+function prune_password_reset_storage($path = null) {
+    $path = $path ?: password_reset_storage_path();
+    if (!file_exists($path)) {
+        return false;
+    }
+
+    $decoded = json_decode(file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        return false;
+    }
+
+    $now = time();
+    $filtered = array_values(array_filter($decoded, function ($entry) use ($now) {
+        return is_array($entry)
+            && !empty($entry['email'])
+            && !empty($entry['token_hash'])
+            && empty($entry['used_at'])
+            && (int)($entry['expires_at'] ?? 0) >= $now;
+    }));
+
+    if ($filtered !== $decoded) {
+        file_put_contents($path, json_encode($filtered), LOCK_EX);
+    }
+
+    return true;
 }
