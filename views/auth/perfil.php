@@ -12,21 +12,21 @@
         <?php echo csrf_field(); ?>
 
         <label for="nombre">Nombre</label>
-        <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($usuario['nombre'] ?? ''); ?>" required>
+        <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($usuario['nombre'] ?? ''); ?>" required autocomplete="name">
 
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($usuario['email'] ?? ''); ?>" required>
+        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($usuario['email'] ?? ''); ?>" required autocomplete="email">
 
         <h3 style="margin-top: 25px;">Cambiar contraseña</h3>
 
         <label for="password_actual">Contraseña actual</label>
-        <input type="password" id="password_actual" name="password_actual">
+        <input type="password" id="password_actual" name="password_actual" autocomplete="current-password">
 
         <label for="password_nueva">Nueva contraseña</label>
-        <input type="password" id="password_nueva" name="password_nueva">
+        <input type="password" id="password_nueva" name="password_nueva" autocomplete="new-password">
 
         <label for="password_confirmar">Confirmar nueva contraseña</label>
-        <input type="password" id="password_confirmar" name="password_confirmar">
+        <input type="password" id="password_confirmar" name="password_confirmar" autocomplete="new-password">
 
         <button type="submit" style="margin-top: 20px;">Guardar cambios</button>
     </form>

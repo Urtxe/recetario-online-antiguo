@@ -37,7 +37,7 @@ body {
 }
 
 .contenedor-auth {
-    width: min(460px, 100%);
+    width: min(520px, 100%);
     border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -69,12 +69,14 @@ body {
 
 .botones {
     display: flex;
+    flex-wrap: wrap;
     background-color: rgba(241, 241, 241, 0.55);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tab-btn {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 16px 14px;
     border: none;
     cursor: pointer;
@@ -103,10 +105,23 @@ body {
 
 .panel {
     display: none;
+    animation: authPanelFade 0.18s ease-out;
 }
 
 .panel.activo {
     display: block;
+}
+
+@keyframes authPanelFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .panel h3 {
@@ -199,6 +214,7 @@ body {
     }
 
     .tab-btn {
+        flex: 1 1 100%;
         padding: 14px 10px;
     }
 
