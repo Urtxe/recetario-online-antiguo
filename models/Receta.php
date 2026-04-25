@@ -3,6 +3,9 @@ require_once 'config/Database.php';
 
 class Receta {
     private $db;
+    private $cacheOrigenes = null;
+    private $cacheTipos = null;
+    private $cacheUsuarios = null;
 
     public function __construct() {
         $this->db = Database::conectar();
@@ -264,22 +267,37 @@ class Receta {
 
     // Orígenes en uso
     public function obtenerOrigenesEnUso() {
+        if ($this->cacheOrigenes !== null) {
+            return $this->cacheOrigenes;
+        }
+
         $sql = "SELECT DISTINCT origen FROM recetas WHERE origen IS NOT NULL AND origen != '' ORDER BY origen ASC";
-        return $this->db->query($sql);
+        $this->cacheOrigenes = $this->db->query($sql);
+        return $this->cacheOrigenes;
     }
 
     // Tipos en uso
     public function obtenerTiposEnUso() {
+        if ($this->cacheTipos !== null) {
+            return $this->cacheTipos;
+        }
+
         $sql = "SELECT DISTINCT tipo FROM recetas WHERE tipo IS NOT NULL AND tipo != '' ORDER BY tipo ASC";
-        return $this->db->query($sql);
+        $this->cacheTipos = $this->db->query($sql);
+        return $this->cacheTipos;
     }
 
     // Usuarios con recetas
     public function obtenerUsuariosConRecetas() {
+        if ($this->cacheUsuarios !== null) {
+            return $this->cacheUsuarios;
+        }
+
         $sql = "SELECT DISTINCT u.id, u.nombre 
                 FROM usuarios u 
                 INNER JOIN recetas r ON u.id = r.usuario_id 
                 ORDER BY u.nombre ASC";
-        return $this->db->query($sql);
+        $this->cacheUsuarios = $this->db->query($sql);
+        return $this->cacheUsuarios;
     }
 }

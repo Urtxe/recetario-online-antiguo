@@ -2,8 +2,9 @@
 require_once 'models/Receta.php';
 require_once 'services/RecipeService.php';
 require_once 'config/helpers.php';
+require_once 'controllers/BaseController.php';
 
-class RecetaController {
+class RecetaController extends BaseController {
     private $recipeService;
 
     private $dificultadesPermitidas = ['facil', 'medio', 'dificil'];
@@ -22,10 +23,7 @@ class RecetaController {
     }
 
     private function verificarSesion() {
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?controller=auth&action=login');
-            exit();
-        }
+        $this->requireLogin();
     }
 
     private function validarRecetaDesdePost() {
@@ -146,7 +144,7 @@ class RecetaController {
             'ingredientes' => $_GET['ingredientes'] ?? ''
         ];
 
-        $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $pagina = max(1, isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1);
         $por_pagina = 12;
 
         $listado = $this->recipeService->listData($filtros, $pagina, $por_pagina, $_SESSION['usuario_id']);
@@ -321,17 +319,13 @@ class RecetaController {
         if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id_receta'])) {
             $this->editar($_POST['id_receta']);
         } else {
-            header('Location: index.php');
-            exit();
+            $this->redirect('index.php');
         }
     }
 
     public function borrar($id) {
         $this->verificarSesion();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit('Método no permitido');
-        }
+        $this->requirePost();
 
         require_csrf_token($_POST['_csrf_token'] ?? '');
         $resultado = $this->recipeService->deleteRecipe($id, $_SESSION['usuario_id']);
@@ -352,7 +346,7 @@ class RecetaController {
         $this->verificarSesion();
         $usuario_nombre = $_SESSION['usuario_nombre'];
 
-        $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $pagina = max(1, isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1);
         $por_pagina = 9;
         $listado = $this->recipeService->getFavoritesData($_SESSION['usuario_id'], $pagina, $por_pagina);
 
@@ -381,8 +375,7 @@ class RecetaController {
         $usuario_id = $_SESSION['usuario_id'];
 
         if ($receta_id) {
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode($this->recipeService->toggleFavorite($usuario_id, $receta_id));
+            $this->jsonResponse($this->recipeService->toggleFavorite($usuario_id, $receta_id));
         }
         exit();
     }

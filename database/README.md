@@ -21,4 +21,5 @@ SOURCE database/security.sql;
 
 - El script es idempotente en la medida de lo posible.
 - Antes de crear los indices unicos, conviene borrar duplicados en `usuarios.email` y en `favoritos (usuario_id, receta_id)`.
+- El script tambien crea indices para `recetas` e `ingredientes` que ayudan a los listados, filtros y favoritos cuando la base crece.
 - La recuperacion de contraseña en local sigue usando almacenamiento en disco para no depender de correo real.
