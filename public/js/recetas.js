@@ -51,20 +51,29 @@ document.addEventListener("DOMContentLoaded", function() {
         const popularityHtml = Number(receta.favorite_count || 0) > 0
             ? `<span class="recipe-chip">Favoritos: ${escapeHtml(receta.favorite_count)}</span>`
             : '';
+        const ownerActionsHtml = esAutor ? `
+            <div class="grid-admin-buttons">
+                <a href="index.php?controller=receta&action=editar&id=${receta.id}" class="btn-edit-mini">Editar</a>
+                <form action="index.php?controller=receta&action=borrar&id=${receta.id}" method="post" class="inline-form" data-confirm="¿Seguro?">
+                    <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
+                    <input type="hidden" name="id" value="${receta.id}">
+                    <button type="submit" class="btn-delete-mini">Borrar</button>
+                </form>
+            </div>
+        ` : '';
 
         return `
             <div class="receta-item">
-                <div class="btn-fav-container">
-                    <button class="btn-fav" data-id="${receta.id}">${favIcon}</button>
-                </div>
-                <a href="index.php?controller=receta&action=ver&id=${receta.id}" class="link-estirado" aria-label="${escapeHtml(receta.titulo)}">
-                    ${imageHtml}
+                <a href="index.php?controller=receta&action=ver&id=${receta.id}" class="recipe-card-link link-estirado" aria-label="${escapeHtml(receta.titulo)}">
+                    <div class="recipe-card-media">
+                        ${imageHtml}
+                    </div>
                     <div class="recipe-card-body">
                         <h3 class="receta-titulo">${escapeHtml(receta.titulo)}</h3>
                         <p class="recipe-card-meta">
-                            <strong>Origen:</strong> ${escapeHtml(receta.origen)}<br>
-                            <strong>Tipo:</strong> ${escapeHtml(receta.tipo)}<br>
-                            <strong>Tiempo:</strong> ${escapeHtml(receta.duracion)} min
+                            <span><strong>Origen:</strong> ${escapeHtml(receta.origen)}</span>
+                            <span><strong>Tipo:</strong> ${escapeHtml(receta.tipo)}</span>
+                            <span><strong>Tiempo:</strong> ${escapeHtml(receta.duracion)} min</span>
                         </p>
                         <div class="recipe-card-footer">
                             <p class="recipe-author-label">Por: ${escapeHtml(receta.nombre_autor)}</p>
@@ -72,16 +81,12 @@ document.addEventListener("DOMContentLoaded", function() {
                         </div>
                     </div>
                 </a>
-                ${esAutor ? `
-                    <div class="grid-admin-buttons">
-                        <a href="index.php?controller=receta&action=editar&id=${receta.id}" class="btn-edit-mini">Editar</a>
-                        <form action="index.php?controller=receta&action=borrar&id=${receta.id}" method="post" class="inline-form" data-confirm="¿Seguro?">
-                            <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
-                            <input type="hidden" name="id" value="${receta.id}">
-                            <button type="submit" class="btn-delete-mini">Borrar</button>
-                        </form>
+                <div class="recipe-card-actions">
+                    <div class="btn-fav-container">
+                        <button class="btn-fav" data-id="${receta.id}" aria-label="${receta.es_favorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${favIcon}</button>
                     </div>
-                ` : ''}
+                    ${ownerActionsHtml}
+                </div>
             </div>
         `;
     }

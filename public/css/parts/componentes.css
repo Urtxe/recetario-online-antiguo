@@ -1,7 +1,8 @@
 /* ========== BOTONES ========== */
 
 /* Botón principal de submit */
-button[type="submit"] {
+.content-card form > button[type="submit"],
+.panel form > button[type="submit"] {
     background-color: var(--color-primary);
     color: white;
     border: none;
@@ -14,7 +15,8 @@ button[type="submit"] {
     transition: background-color 0.2s ease;
 }
 
-button[type="submit"]:hover {
+.content-card form > button[type="submit"]:hover,
+.panel form > button[type="submit"]:hover {
     background-color: var(--color-primary-hover);
 }
 
@@ -97,12 +99,15 @@ button[type="submit"]:hover {
 .btn-edit-mini {
     background-color: var(--color-primary);
     color: white;
-    padding: 10px 20px;
+    padding: 0.75rem 1rem;
     text-decoration: none;
-    border-radius: 5px;
-    margin-right: 10px;
+    border-radius: var(--radius-md);
     font-weight: bold;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 92px;
     transition: opacity 0.2s ease;
 }
 
@@ -116,11 +121,15 @@ button[type="submit"]:hover {
 .btn-delete-mini {
     background-color: var(--color-error);
     color: white;
-    padding: 10px 20px;
+    padding: 0.75rem 1rem;
     text-decoration: none;
-    border-radius: 5px;
+    border-radius: var(--radius-md);
     font-weight: bold;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 92px;
     transition: opacity 0.2s ease;
 }
 
@@ -131,13 +140,20 @@ button[type="submit"]:hover {
 
 /* Botón de favorito */
 .btn-fav {
-    background: none;
+    background: rgba(255, 244, 233, 0.85);
     border: none;
-    font-size: 3.5rem;
+    font-size: 2.15rem;
     cursor: pointer;
     line-height: 1;
     transition: transform 0.2s ease;
-    height: 50px;
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-fav:hover {
@@ -145,13 +161,20 @@ button[type="submit"]:hover {
 }
 
 .btn-fav-ver {
-    background: none;
+    background: rgba(255, 244, 233, 0.9);
     border: none;
-    font-size: 4rem;
+    font-size: 2.8rem;
     cursor: pointer;
     line-height: 1;
     transition: transform 0.2s ease;
-    height: 100px;
+    min-width: 56px;
+    min-height: 56px;
+    height: 56px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-fav-ver:hover {
@@ -160,10 +183,9 @@ button[type="submit"]:hover {
 
 /* Contenedor de botón de favorito */
 .btn-fav-container {
-    position: absolute;
-    bottom: 8px;
-    right: 10px;
-    z-index: 3;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 /* ========== ALERTAS ========== */
@@ -249,7 +271,7 @@ button[type="submit"]:hover {
 }
 
 .inline-form {
-    display: inline;
+    display: inline-flex;
 }
 
 .section-panel {
@@ -276,4 +298,19 @@ button[type="submit"]:hover {
     text-align: center;
     padding: 40px;
     color: #777;
+}
+
+@media (max-width: 560px) {
+    .btn-edit,
+    .btn-edit-mini,
+    .btn-delete,
+    .btn-delete-mini {
+        width: 100%;
+    }
+
+    .btn-fav,
+    .btn-fav-ver {
+        margin-left: auto;
+        margin-right: 0;
+    }
 }

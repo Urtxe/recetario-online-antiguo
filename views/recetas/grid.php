@@ -1,51 +1,25 @@
-<?php 
-// Verificar favoritos con lista precargada desde el controlador
-?>
-
 <div class="recetas-grid-container">
     <?php if ($recetas && $recetas->num_rows > 0): ?>
         <?php while($receta = $recetas->fetch_assoc()): ?>
-            <div class="receta-item">
-                <?php $esFav = isset($favoritos_ids[$receta['id']]); ?>
-                <div class="btn-fav-container">
-                    <button class="btn-fav" data-id="<?php echo $receta['id']; ?>" <?php echo (isset($desde_favoritos) && $desde_favoritos) ? 'data-from-favorites="1"' : ''; ?>>
-                        <?php echo $esFav ? '❤️' : '🤍'; ?>
-                    </button>
-                </div>
+            <?php
+                $mostrarFavorito = true;
+                $accionesSecundariasHtml = '';
 
-                <a href="index.php?controller=receta&action=ver&id=<?php echo $receta['id']; ?>" class="link-estirado" aria-label="<?php echo htmlspecialchars($receta['titulo']); ?>">
-                    <?php if (!empty($receta['imagen_url'])): ?>
-                        <img src="<?php echo htmlspecialchars(recipe_image_url($receta['imagen_url']), ENT_QUOTES, 'UTF-8'); ?>" class="receta-miniatura" alt="<?php echo htmlspecialchars($receta['titulo'], ENT_QUOTES, 'UTF-8'); ?>">
-                    <?php else: ?>
-                        <div class="sin-imagen-placeholder"><span>Imagen no subida</span></div>
-                    <?php endif; ?>
-                    <div class="recipe-card-body">
-                        <h3 class="receta-titulo"><?php echo htmlspecialchars($receta['titulo']); ?></h3>
-                        <p class="recipe-card-meta">
-                            <strong>Origen:</strong> <?php echo htmlspecialchars($receta['origen']); ?><br>
-                            <strong>Tipo:</strong> <?php echo htmlspecialchars($receta['tipo']); ?><br>
-                            <strong>Tiempo:</strong> <?php echo htmlspecialchars($receta['duracion']); ?> min
-                        </p>
-                        <div class="recipe-card-footer">
-                            <p class="recipe-author-label">Por: <?php echo htmlspecialchars($receta['nombre_autor']); ?></p>
-                            <?php if (!empty($receta['favorite_count'])): ?>
-                                <span class="recipe-chip">Favoritos: <?php echo (int)$receta['favorite_count']; ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </a>
+                if ((int)($_SESSION['usuario_id'] ?? 0) === (int)($receta['usuario_id'] ?? 0)) {
+                    ob_start();
+                    ?>
+                    <a href="index.php?controller=receta&action=editar&id=<?php echo (int)$receta['id']; ?>" class="btn-edit-mini">Editar</a>
+                    <form action="index.php?controller=receta&action=borrar&id=<?php echo (int)$receta['id']; ?>" method="post" class="inline-form" data-confirm="¿Seguro?">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$receta['id']; ?>">
+                        <button type="submit" class="btn-delete-mini">Borrar</button>
+                    </form>
+                    <?php
+                    $accionesSecundariasHtml = ob_get_clean();
+                }
 
-                <?php if ($_SESSION['usuario_id'] == $receta['usuario_id']): ?>
-                    <div class="grid-admin-buttons">
-                        <a href="index.php?controller=receta&action=editar&id=<?php echo $receta['id']; ?>" class="btn-edit-mini">Editar</a>
-                        <form action="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" method="post" class="inline-form" data-confirm="¿Seguro?">
-                            <?php echo csrf_field(); ?>
-                            <input type="hidden" name="id" value="<?php echo $receta['id']; ?>">
-                            <button type="submit" class="btn-delete-mini">Borrar</button>
-                        </form>
-                    </div>
-                <?php endif; ?>
-            </div>
+                include __DIR__ . '/_recipe_card.php';
+            ?>
         <?php endwhile; ?>
     <?php else: ?>
         <p class="empty-state">No se encontraron recetas</p>

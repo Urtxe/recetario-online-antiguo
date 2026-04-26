@@ -33,7 +33,7 @@
 .content-card form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .content-card form label {
@@ -64,13 +64,13 @@
 }
 
 .form-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .form-row-split .form-field {
-    flex: 1 1 220px;
+    min-width: 0;
 }
 
 .form-field {
@@ -115,6 +115,7 @@
 .ingredient-list-editor {
     display: flex;
     flex-direction: column;
+    gap: 0.5rem;
 }
 
 .ingredient-item input {
@@ -146,6 +147,44 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-filtros button {
+        width: 100%;
+    }
+
+    .ingredient-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ingredient-item .btn-remove {
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 560px) {
+    .content-card form input,
+    .content-card form textarea,
+    .content-card form select {
+        font-size: 16px;
+    }
+
+    .ingredient-list li {
+        align-items: flex-start;
+    }
 }
 
 .ingredient-list li:last-child {

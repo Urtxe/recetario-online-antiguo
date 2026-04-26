@@ -46,21 +46,22 @@
         </div>
     </div>
 
-    <?php if ($usuario_id_actual == $receta['usuario_id']): ?>
-        <hr>
-        <div class="recipe-detail-actions">
-            <a href="index.php?controller=receta&action=editar&id=<?php echo $receta['id']; ?>" class="btn-edit">Editar Receta</a>
-            <form action="index.php?controller=receta&action=borrar&id=<?php echo $receta['id']; ?>" method="post" class="inline-form" data-confirm="¿Seguro que quieres borrarla?">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" name="id" value="<?php echo $receta['id']; ?>">
-                <button type="submit" class="btn-delete">Borrar Receta</button>
-            </form>
+    <div class="recipe-detail-actions">
+        <div class="recipe-detail-actions-group">
+            <button id="btn-favorito" class="btn-fav btn-fav-ver recipe-detail-fav" data-id="<?php echo (int)$receta['id']; ?>" aria-label="<?php echo $es_favorito ? 'Quitar de favoritos' : 'Añadir a favoritos'; ?>">
+                <?php echo $es_favorito ? '❤️' : '🤍'; ?>
+            </button>
         </div>
-    <?php endif; ?>
 
-    <div class="btn-fav-container">
-        <button id="btn-favorito" class="btn-fav-ver" data-id="<?php echo $receta['id']; ?>">
-            <?php echo $es_favorito ? '❤️' : '🤍'; ?>
-        </button>
+        <?php if ($usuario_id_actual == $receta['usuario_id']): ?>
+            <div class="recipe-detail-actions-group">
+                <a href="index.php?controller=receta&action=editar&id=<?php echo (int)$receta['id']; ?>" class="btn-edit">Editar Receta</a>
+                <form action="index.php?controller=receta&action=borrar&id=<?php echo (int)$receta['id']; ?>" method="post" class="inline-form" data-confirm="¿Seguro que quieres borrarla?">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="id" value="<?php echo (int)$receta['id']; ?>">
+                    <button type="submit" class="btn-delete">Borrar Receta</button>
+                </form>
+            </div>
+        <?php endif; ?>
     </div>
 </div>

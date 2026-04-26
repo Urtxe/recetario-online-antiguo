@@ -1,24 +1,11 @@
-/* Configuración del body para páginas normales (no auth) */
-/* Solo aplica si NO existe .contenedor-auth */
-body:not(:has(.contenedor-auth)) {
-    width: 80%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Fallback para navegadores sin soporte :has() */
 body {
-    width: 80%;
-    max-width: 1400px;
+    width: min(100%, 1400px);
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: clamp(1rem, 2vw, 1.5rem);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 /* Contenedor principal que empuja el footer hacia abajo */
@@ -31,7 +18,7 @@ main {
 .main-header {
     width: 100%;
     background-color: var(--color-white);
-    padding: 1.5rem 2rem;
+    padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     margin-bottom: 2rem;
@@ -61,10 +48,11 @@ main {
 /* Navegación principal */
 .main-nav h1 {
     text-align: center;
-    font-size: 2.8rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
     font-weight: 700;
     color: var(--color-primary-dark);
     margin: 0 0 1rem 0;
+    line-height: 1.05;
 }
 
 .main-nav ul {
@@ -74,6 +62,7 @@ main {
     display: flex;
     justify-content: center;
     gap: 2rem;
+    flex-wrap: wrap;
 }
 
 .main-nav ul a {
@@ -95,14 +84,15 @@ main {
 /* Tarjetas de contenido */
 .content-card {
     background-color: var(--color-white);
-    padding: 1rem 2rem;
+    padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     margin-bottom: 2rem;
+    box-sizing: border-box;
 }
 
 .content-card h2 {
-    font-size: 2rem;
+    font-size: clamp(1.5rem, 3vw, 2rem);
     color: var(--color-primary-dark);
     border-bottom: 2px solid var(--color-border);
     padding-bottom: 0.5rem;
@@ -117,4 +107,61 @@ footer {
     font-size: 0.9rem;
     margin-top: auto;
     border-top: 1px solid var(--color-border-light);
+}
+
+@media (max-width: 960px) {
+    body {
+        width: 100%;
+    }
+
+    .main-header,
+    .content-card {
+        border-radius: var(--radius-md);
+    }
+}
+
+@media (max-width: 720px) {
+    .main-header {
+        margin-bottom: 1.25rem;
+    }
+
+    .user-info {
+        text-align: left;
+    }
+
+    .user-info-links {
+        justify-content: flex-start;
+    }
+
+    .main-nav h1 {
+        font-size: clamp(1.7rem, 7vw, 2.1rem);
+        margin-bottom: 0.75rem;
+    }
+
+    .main-nav ul {
+        gap: 0.85rem 1.25rem;
+    }
+
+    .main-nav ul a {
+        font-size: 1rem;
+    }
+
+    .content-card h2 {
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 560px) {
+    body {
+        padding: 0.85rem;
+    }
+
+    .main-header,
+    .content-card {
+        padding: 1rem;
+    }
+
+    .main-nav ul {
+        justify-content: flex-start;
+    }
 }

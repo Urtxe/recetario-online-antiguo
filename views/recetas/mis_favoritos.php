@@ -1,4 +1,4 @@
-<div class="main-container">
+<div class="content-card">
     <h2>Mis Favoritos</h2>
     <div id="contenedor-grid">
         <?php include 'views/recetas/grid.php'; ?>
