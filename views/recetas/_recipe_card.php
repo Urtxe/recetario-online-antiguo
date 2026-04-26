@@ -45,6 +45,12 @@ $imagenUrl = $tieneImagen ? recipe_image_url($receta['imagen_url']) : '';
     </a>
 
     <div class="recipe-card-actions">
+        <?php if (!empty($accionesSecundariasHtml)): ?>
+            <div class="grid-admin-buttons recipe-card-actions-main">
+                <?php echo $accionesSecundariasHtml; ?>
+            </div>
+        <?php endif; ?>
+
         <?php if ($mostrarFavorito): ?>
             <div class="btn-fav-container">
                 <button
@@ -55,12 +61,6 @@ $imagenUrl = $tieneImagen ? recipe_image_url($receta['imagen_url']) : '';
                 >
                     <?php echo $esFav ? '❤️' : '🤍'; ?>
                 </button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($accionesSecundariasHtml)): ?>
-            <div class="grid-admin-buttons">
-                <?php echo $accionesSecundariasHtml; ?>
             </div>
         <?php endif; ?>
     </div>

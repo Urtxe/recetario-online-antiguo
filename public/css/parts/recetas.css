@@ -147,38 +147,45 @@
 .recipe-card-actions {
     display: flex;
     justify-content: flex-start;
-    gap: 0.6rem;
+    gap: 0.75rem;
     align-items: center;
     flex-wrap: nowrap;
-    padding: 0.8rem 1rem;
+    padding: 0.8rem 0.95rem;
     border-top: 1px solid var(--color-border-light);
     background: #fafafa;
-    overflow-x: auto;
 }
 
+.recipe-card-actions-main,
 .grid-admin-buttons {
     display: flex;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 0.5rem;
+    gap: 0.45rem;
     align-items: center;
-    margin-left: auto;
+    min-width: 0;
 }
 
-.btn-delete-mini, 
-.btn-edit-mini, 
+.recipe-card-actions-main {
+    flex: 1 1 auto;
+}
+
+.btn-delete-mini,
+.btn-edit-mini,
 .btn-fav {
     display: inline-block;
 }
 
 .btn-fav-container {
-    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     flex: 0 0 auto;
+    margin-left: auto;
 }
 
 /* Ajuste de tamaño para corazones en el grid */
 .receta-item .btn-fav {
-    font-size: 1.85rem;
+    font-size: 1.65rem;
 }
 
 /* ========== VISTA DETALLE DE RECETA ========== */
@@ -375,9 +382,10 @@
     .grid-admin-buttons .btn-delete-mini {
         width: auto;
         flex: 0 0 auto;
-        min-width: 78px;
-        padding: 0.6rem 0.8rem;
-        font-size: 0.9rem;
+        min-width: 76px;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.85rem;
+        letter-spacing: 0.01em;
     }
 
     .recipe-meta {

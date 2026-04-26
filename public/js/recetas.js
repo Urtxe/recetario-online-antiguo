@@ -82,10 +82,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     </div>
                 </a>
                 <div class="recipe-card-actions">
+                    ${ownerActionsHtml}
                     <div class="btn-fav-container">
                         <button class="btn-fav" data-id="${receta.id}" aria-label="${receta.es_favorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${favIcon}</button>
                     </div>
-                    ${ownerActionsHtml}
                 </div>
             </div>
         `;
