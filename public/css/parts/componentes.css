@@ -113,13 +113,14 @@
 
 .btn-edit-mini,
 .btn-delete-mini {
-    min-height: 34px;
-    min-width: 60px;
-    padding: 0.42rem 0.95rem;
-    font-size: 0.82rem;
+    min-height: 32px;
+    min-width: 68px;
+    padding: 0.42rem 0.78rem;
+    font-size: 0.8rem;
     border-radius: 4px;
     letter-spacing: 0.01em;
     white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .btn-edit:hover,
@@ -153,14 +154,14 @@
 .btn-fav {
     background: none;
     border: none;
-    font-size: 1.95rem;
+    font-size: 1.8rem;
     cursor: pointer;
     line-height: 1;
     transition: transform 0.2s ease;
     min-width: auto;
     min-height: auto;
     height: auto;
-    padding: 0 0.1rem;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
