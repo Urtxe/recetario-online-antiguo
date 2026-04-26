@@ -113,10 +113,11 @@
 
 .btn-edit-mini,
 .btn-delete-mini {
-    min-height: 36px;
-    min-width: 72px;
-    padding: 0.45rem 0.65rem;
-    font-size: 0.83rem;
+    min-height: 34px;
+    min-width: 60px;
+    padding: 0.42rem 0.95rem;
+    font-size: 0.82rem;
+    border-radius: 4px;
     letter-spacing: 0.01em;
     white-space: nowrap;
 }
@@ -150,20 +151,20 @@
 
 /* Botón de favorito */
 .btn-fav {
-    background: rgba(255, 244, 233, 0.85);
+    background: none;
     border: none;
-    font-size: 1.7rem;
+    font-size: 1.95rem;
     cursor: pointer;
     line-height: 1;
     transition: transform 0.2s ease;
-    min-width: 42px;
-    min-height: 42px;
-    height: 42px;
-    border-radius: 999px;
+    min-width: auto;
+    min-height: auto;
+    height: auto;
+    padding: 0 0.1rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
 }
 
 .btn-fav:hover {
@@ -312,9 +313,7 @@
 
 @media (max-width: 560px) {
     .btn-edit,
-    .btn-edit-mini,
-    .btn-delete,
-    .btn-delete-mini {
+    .btn-delete {
         width: 100%;
     }
 
