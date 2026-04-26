@@ -146,21 +146,23 @@
 /* Botones de administración en el grid */
 .recipe-card-actions {
     display: flex;
-    justify-content: space-between;
-    gap: 0.75rem;
+    justify-content: flex-start;
+    gap: 0.6rem;
     align-items: center;
-    flex-wrap: wrap;
-    padding: 0.9rem 1rem 1rem;
+    flex-wrap: nowrap;
+    padding: 0.8rem 1rem;
     border-top: 1px solid var(--color-border-light);
     background: #fafafa;
+    overflow-x: auto;
 }
 
 .grid-admin-buttons {
     display: flex;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
     align-items: center;
+    margin-left: auto;
 }
 
 .btn-delete-mini, 
@@ -170,7 +172,8 @@
 }
 
 .btn-fav-container {
-    justify-content: flex-end;
+    justify-content: flex-start;
+    flex: 0 0 auto;
 }
 
 /* Ajuste de tamaño para corazones en el grid */
@@ -321,7 +324,7 @@
 
     .recipe-card-actions,
     .recipe-detail-actions {
-        padding: 0.9rem;
+        padding: 0.75rem 0.85rem;
     }
 
     .recipe-card-body {
@@ -339,13 +342,13 @@
 
     .recipe-detail-actions-group,
     .grid-admin-buttons {
-        width: 100%;
-        justify-content: stretch;
+        width: auto;
+        justify-content: flex-start;
     }
 
     .grid-admin-buttons .btn-edit-mini,
     .grid-admin-buttons .btn-delete-mini {
-        flex: 1 1 140px;
+        flex: 0 0 auto;
     }
 }
 
@@ -361,18 +364,20 @@
     }
 
     .recipe-card-actions {
-        flex-direction: column;
+        flex-direction: row;
     }
 
     .btn-fav-container {
-        width: 100%;
-        justify-content: flex-start;
+        width: auto;
     }
 
     .grid-admin-buttons .btn-edit-mini,
     .grid-admin-buttons .btn-delete-mini {
-        width: 100%;
-        flex: 1 1 100%;
+        width: auto;
+        flex: 0 0 auto;
+        min-width: 78px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
     }
 
     .recipe-meta {
